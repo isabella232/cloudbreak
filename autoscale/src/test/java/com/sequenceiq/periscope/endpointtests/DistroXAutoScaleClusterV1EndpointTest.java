@@ -35,6 +35,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import com.cloudera.thunderhead.service.authorization.AuthorizationProto.RightCheck;
 import com.cloudera.thunderhead.service.usermanagement.UserManagementProto;
+import com.sequenceiq.authorization.service.OwnerAssignmentService;
 import com.sequenceiq.authorization.service.UmsResourceAuthorizationService;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.connector.responses.AutoscaleRecommendationV4Response;
 import com.sequenceiq.cloudbreak.auth.altus.GrpcUmsClient;
@@ -106,6 +107,9 @@ public class DistroXAutoScaleClusterV1EndpointTest {
     @MockBean(name = "grpcUmsClient")
     private GrpcUmsClient grpcUmsClient;
 
+    @MockBean
+    private OwnerAssignmentService ownerAssignmentService;
+
     @MockBean(name = "umsClient")
     private UmsClient umsClient;
 
@@ -147,11 +151,7 @@ public class DistroXAutoScaleClusterV1EndpointTest {
         clusterRepository.save(testCluster);
 
         when(grpcUmsClient.getUserDetails(anyString(), anyString(), any())).thenReturn(user);
-        lenient().when(grpcUmsClient.hasRights(anyString(), anyString(), anyList(), any())).then(i -> {
-            List<RightCheck> rightChecks = i.getArgument(2);
-            return rightChecks.stream().map(r -> Boolean.TRUE).collect(toList());
-        });
-        lenient().when(grpcUmsClient.checkRight(anyString(), anyString(), anyString(), anyString(), any())).thenReturn(true);
+        when(grpcUmsClient.getAccountDetails(anyString(), anyString(), any())).thenReturn(UserManagementProto.Account.newBuilder().build());
         doNothing().when(umsResourceAuthorizationService).checkRightOfUserOnResource(TEST_USER_CRN, SCALE_DATAHUB,
                 "crn:cdp:iam:us-west-1:accid:cluster:mockuser@cloudera.com");
         when(clusterProxyConfigurationService.getClusterProxyUrl()).thenReturn(Optional.of("http://clusterproxy"));

@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.google.common.base.Strings;
+import com.sequenceiq.authorization.service.ResourceNameProvider;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.common.StackType;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.common.Status;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.dto.NameOrCrn;
@@ -105,7 +107,7 @@ import com.sequenceiq.common.api.telemetry.model.Telemetry;
 import com.sequenceiq.flow.core.ResourceIdProvider;
 
 @Service
-public class StackService implements ResourceIdProvider {
+public class StackService implements ResourceIdProvider, ResourceNameProvider {
 
     public static final Set<String> REATTACH_COMPATIBLE_PLATFORMS = Set.of(CloudConstants.AWS, CloudConstants.AZURE, CloudConstants.GCP, CloudConstants.MOCK);
 
@@ -836,5 +838,16 @@ public class StackService implements ResourceIdProvider {
 
     StackRepository repository() {
         return stackRepository;
+    }
+
+    @Override
+    public Optional<String> getNameByCrn(String resourceCrn) {
+        Long workspaceId = workspaceService.getForCurrentUser().getId();
+        return stackRepository.findNameByCrnAndWorkspaceId(resourceCrn, workspaceId);
+    }
+
+    @Override
+    public EnumSet<Crn.ResourceType> getCrnType() {
+        return EnumSet.of(Crn.ResourceType.DATALAKE, Crn.ResourceType.CLUSTER, Crn.ResourceType.STACK);
     }
 }

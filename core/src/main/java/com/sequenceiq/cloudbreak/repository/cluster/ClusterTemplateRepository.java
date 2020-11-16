@@ -35,6 +35,9 @@ public interface ClusterTemplateRepository extends WorkspaceResourceRepository<C
     @Query("SELECT c.resourceCrn FROM ClusterTemplate c WHERE c.name = :name AND c.workspace.tenant.name = :accountId")
     String findResourceCrnByNameAndAccountId(@Param("name") String name, @Param("accountId") String accountId);
 
+    @Query("SELECT c.name FROM ClusterTemplate c WHERE c.resourceCrn = :resourceCrn AND c.workspace.tenant.name = :accountId")
+    Optional<String> findResourceNameByCrnAndAccountId(@Param("resourceCrn") String resourceCrn, @Param("accountId") String accountId);
+
     @Query("SELECT c.resourceCrn FROM ClusterTemplate c WHERE c.workspace.tenant.name = :accountId")
     List<String> findAllResourceCrnsByAccountId(@Param("accountId") String accountId);
 

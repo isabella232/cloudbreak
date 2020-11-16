@@ -35,6 +35,9 @@ public interface DatabaseConfigRepository extends JpaRepository<DatabaseConfig, 
     @Query("SELECT c.resourceCrn FROM DatabaseConfig c WHERE c.name = :name")
     Optional<Crn> findResourceCrnByName(@Param("name") String name);
 
+    @Query("SELECT c.name FROM DatabaseConfig c WHERE c.resourceCrn = :resourceCrn")
+    Optional<String> findNameByResourceCrn(@Param("resourceCrn") String resourceCrn);
+
     @Query("SELECT c.resourceCrn FROM DatabaseConfig c WHERE c.name IN (:names)")
     List<Crn> findResourceCrnsByNames(@Param("names") Collection<String> names);
 }

@@ -59,6 +59,13 @@ public interface EnvironmentEndpoint {
             nickname = "getCrnByNameV1")
     EnvironmentCrnResponse getCrnByName(@PathParam("name") String environmentName);
 
+    @GET
+    @Path("/nameByCrn/{crn}")
+    @Produces(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = EnvironmentOpDescription.GET_NAME_BY_CRN, produces = MediaType.APPLICATION_JSON, notes = ENVIRONMENT_NOTES,
+            nickname = "getNameByCrnV1")
+    EnvironmentCrnResponse getNameByCrn(@PathParam("crn") String environmentCrn);
+
     @DELETE
     @Path("/name/{name}")
     @Produces(MediaType.APPLICATION_JSON)

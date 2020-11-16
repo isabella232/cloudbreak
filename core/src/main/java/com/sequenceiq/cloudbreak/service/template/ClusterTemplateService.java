@@ -8,6 +8,7 @@ import static java.util.stream.Collectors.toSet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -27,7 +28,7 @@ import org.springframework.stereotype.Service;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.io.BaseEncoding;
 import com.sequenceiq.authorization.resource.AuthorizationResourceType;
-import com.sequenceiq.authorization.service.ResourceBasedCrnProvider;
+import com.sequenceiq.authorization.service.ResourceCrnAndNameProvider;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.clustertemplate.requests.DefaultClusterTemplateV4Request;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.clustertemplate.responses.ClusterTemplateViewV4Response;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.common.CompactViewV4Response;
@@ -69,7 +70,7 @@ import com.sequenceiq.cloudbreak.workspace.repository.workspace.WorkspaceResourc
 import com.sequenceiq.distrox.v1.distrox.service.EnvironmentServiceDecorator;
 
 @Service
-public class ClusterTemplateService extends AbstractWorkspaceAwareResourceService<ClusterTemplate> implements ResourceBasedCrnProvider {
+public class ClusterTemplateService extends AbstractWorkspaceAwareResourceService<ClusterTemplate> implements ResourceCrnAndNameProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClusterTemplateService.class);
 
@@ -443,6 +444,16 @@ public class ClusterTemplateService extends AbstractWorkspaceAwareResourceServic
 
     public ClusterTemplateStatusView getStatusViewByResourceCrn(String resourceCrn) {
         return clusterTemplateRepository.findViewByResourceCrn(resourceCrn);
+    }
+
+    @Override
+    public Optional<String> getNameByCrn(String crn) {
+        return clusterTemplateRepository.findResourceNameByCrnAndAccountId(crn, ThreadBasedUserCrnProvider.getAccountId());
+    }
+
+    @Override
+    public EnumSet<Crn.ResourceType> getCrnType() {
+        return EnumSet.of(Crn.ResourceType.CLUSTER_DEFINITION);
     }
 
     @Override

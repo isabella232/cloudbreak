@@ -85,4 +85,7 @@ public interface StackRepository extends AccountAwareResourceRepository<Stack, L
 
     @Query("SELECT s.environmentCrn FROM Stack s WHERE s.accountId = :accountId AND s.terminated = -1")
     List<String> findAllEnvironmentCrnsByTenantId(@Param("accountId") String accountId);
+
+    @Query("SELECT s.name FROM Stack s WHERE s.accountId = :accountId AND s.terminated = -1 AND s.resourceCrn = :resourceCrn")
+    Optional<String> findNameByResourceCrnAndTenantId(@Param("accountId") String accountId, @Param("resourceCrn") String resourceCrn);
 }

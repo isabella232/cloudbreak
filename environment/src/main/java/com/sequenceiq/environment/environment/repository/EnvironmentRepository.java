@@ -48,6 +48,9 @@ public interface EnvironmentRepository extends AccountAwareResourceRepository<En
     @Query("SELECT e.resourceCrn FROM Environment e WHERE e.name = :name AND e.accountId = :accountId")
     Optional<String> findResourceCrnByNameAndAccountId(@Param("name") String name, @Param("accountId") String accountId);
 
+    @Query("SELECT e.name FROM Environment e WHERE e.resourceCrn = :resourceCrn AND e.accountId = :accountId")
+    Optional<String> findNameByResourceCrnAndAccountId(@Param("resourceCrn") String resourceCrn, @Param("accountId") String accountId);
+
     @Query("SELECT e.name FROM Environment e "
             + "JOIN e.parentEnvironment pe "
             + "WHERE pe.id = :parentEnvironmentId AND e.accountId = :accountId AND e.archived = false")

@@ -6,7 +6,9 @@ import static java.util.Collections.emptySet;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -19,7 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.sequenceiq.authorization.resource.AuthorizationResourceType;
-import com.sequenceiq.authorization.service.ResourceBasedCrnProvider;
+import com.sequenceiq.authorization.service.ResourceCrnAndNameProvider;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.dto.NameOrCrn;
 import com.sequenceiq.cloudbreak.auth.ThreadBasedUserCrnProvider;
 import com.sequenceiq.cloudbreak.auth.altus.Crn;
@@ -39,7 +41,7 @@ import com.sequenceiq.cloudbreak.workspace.model.Workspace;
 import com.sequenceiq.cloudbreak.workspace.repository.workspace.WorkspaceResourceRepository;
 
 @Service
-public class RecipeService extends AbstractArchivistService<Recipe> implements ResourceBasedCrnProvider {
+public class RecipeService extends AbstractArchivistService<Recipe> implements ResourceCrnAndNameProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RecipeService.class);
 
@@ -180,5 +182,15 @@ public class RecipeService extends AbstractArchivistService<Recipe> implements R
     @Override
     public AuthorizationResourceType getResourceType() {
         return AuthorizationResourceType.RECIPE;
+    }
+
+    @Override
+    public Optional<String> getNameByCrn(String crn) {
+        return recipeViewRepository.findResourceNameByCrnAndTenantId(crn, ThreadBasedUserCrnProvider.getAccountId());
+    }
+
+    @Override
+    public EnumSet<Crn.ResourceType> getCrnType() {
+        return EnumSet.of(Crn.ResourceType.RECIPE);
     }
 }

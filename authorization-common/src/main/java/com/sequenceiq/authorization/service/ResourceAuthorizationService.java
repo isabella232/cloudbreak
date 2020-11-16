@@ -49,9 +49,13 @@ public class ResourceAuthorizationService {
     @Inject
     private List<AuthorizationFactory<? extends Annotation>> authorizationFactories;
 
+    @Inject
+    private ResourceNameFactoryService resourceNameFactoryService;
+
     public void authorize(String userCrn, ProceedingJoinPoint proceedingJoinPoint, MethodSignature methodSignature, Optional<String> requestId) {
         boolean authzEntitled = entitlementService.isAuthorizationEntitlementRegistered(userCrn, ThreadBasedUserCrnProvider.getAccountId());
         Function<AuthorizationResourceAction, String> rightMapper = umsRightProvider.getRightMapper(authzEntitled);
+        Function<String, Optional<String>> nameMapper = resourceNameFactoryService::getName;
         getAuthorization(userCrn, proceedingJoinPoint, methodSignature).ifPresent(authorization -> {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Resource authorization rule: {}", authorization.toString(rightMapper));
@@ -64,7 +68,7 @@ public class ResourceAuthorizationService {
                     LOGGER.debug("Resource authorization failed: {}", failedAuthorization.toString(rightMapper));
                 }
                 if (authzEntitled) {
-                    throw new AccessDeniedException(failedAuthorization.getAsFailureMessage(rightMapper));
+                    throw new AccessDeniedException(failedAuthorization.getAsFailureMessage(rightMapper, nameMapper));
                 } else {
                     throw new AccessDeniedException(convertToLegacyFailureMeessage(userCrn, failedAuthorization, rightMapper));
                 }

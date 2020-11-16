@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +39,7 @@ import org.springframework.util.CollectionUtils;
 
 import com.google.common.collect.ImmutableSet;
 import com.sequenceiq.authorization.resource.AuthorizationResourceType;
-import com.sequenceiq.authorization.service.ResourceBasedCrnProvider;
+import com.sequenceiq.authorization.service.ResourceCrnAndNameProvider;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.dto.NameOrCrn;
 import com.sequenceiq.cloudbreak.auth.ThreadBasedUserCrnProvider;
 import com.sequenceiq.cloudbreak.auth.altus.Crn;
@@ -68,7 +69,7 @@ import com.sequenceiq.cloudbreak.workspace.model.Workspace;
 import com.sequenceiq.cloudbreak.workspace.repository.workspace.WorkspaceResourceRepository;
 
 @Component
-public class ImageCatalogService extends AbstractWorkspaceAwareResourceService<ImageCatalog> implements ResourceBasedCrnProvider {
+public class ImageCatalogService extends AbstractWorkspaceAwareResourceService<ImageCatalog> implements ResourceCrnAndNameProvider {
 
     public static final String UNDEFINED = "";
 
@@ -682,4 +683,24 @@ public class ImageCatalogService extends AbstractWorkspaceAwareResourceService<I
         return AuthorizationResourceType.IMAGE_CATALOG;
     }
 
+    @Override
+    public Optional<String> getNameByCrn(String crn) {
+        if (legacyCatalogEnabled) {
+            ImageCatalog legacy = getCloudbreakLegacyDefaultImageCatalog();
+            if (legacy.getResourceCrn().equals(crn)) {
+                return Optional.ofNullable(legacy.getName());
+            }
+
+        }
+        ImageCatalog cdpDefault = getCloudbreakDefaultImageCatalog();
+        if (cdpDefault.getResourceCrn().equals(crn)) {
+            return Optional.ofNullable(cdpDefault.getName());
+        }
+        return imageCatalogRepository.findNameByResourceCrnAndTenantId(crn, ThreadBasedUserCrnProvider.getAccountId());
+    }
+
+    @Override
+    public EnumSet<Crn.ResourceType> getCrnType() {
+        return EnumSet.of(Crn.ResourceType.IMAGE_CATALOG);
+    }
 }

@@ -461,6 +461,11 @@ public class OfflineStateGenerator {
         }
 
         @Override
+        public Optional<String> findNameByCrnAndWorkspaceId(String crn, Long workspaceId) {
+            return Optional.empty();
+        }
+
+        @Override
         public Set<StackListItem> findByWorkspaceId(Long id, String environmentCrn, List<StackType> stackTypes) {
             return null;
         }

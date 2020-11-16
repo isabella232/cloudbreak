@@ -9,6 +9,7 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -34,7 +35,7 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.sequenceiq.authorization.resource.AuthorizationResourceType;
-import com.sequenceiq.authorization.service.ResourceBasedCrnProvider;
+import com.sequenceiq.authorization.service.ResourceCrnAndNameProvider;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.StackV4Endpoint;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.base.InstanceTemplateV4Base;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.base.parameter.template.AwsInstanceTemplateV4Parameters;
@@ -90,7 +91,7 @@ import com.sequenceiq.sdx.api.model.SdxClusterRequest;
 import com.sequenceiq.sdx.api.model.SdxClusterShape;
 
 @Service
-public class SdxService implements ResourceIdProvider, ResourceBasedCrnProvider {
+public class SdxService implements ResourceIdProvider, ResourceCrnAndNameProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SdxService.class);
 
@@ -769,4 +770,18 @@ public class SdxService implements ResourceIdProvider, ResourceBasedCrnProvider 
         sdxClusterRepository.updateCertExpirationState(id, state);
     }
 
+    @Override
+    public Optional<String> getNameByCrn(String crn) {
+        try {
+            SdxCluster c = getByCrn(ThreadBasedUserCrnProvider.getUserCrn(), crn);
+            return Optional.ofNullable(c).map(SdxCluster::getClusterName);
+        } catch (RuntimeException ignored) {
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public EnumSet<Crn.ResourceType> getCrnType() {
+        return EnumSet.of(Crn.ResourceType.DATALAKE);
+    }
 }

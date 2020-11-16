@@ -7,6 +7,7 @@ import static com.sequenceiq.cloudbreak.api.endpoint.v4.common.Status.DELETE_COM
 import static com.sequenceiq.cloudbreak.exception.NotFoundException.notFound;
 
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -29,7 +30,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.validation.MapBindingResult;
 
 import com.sequenceiq.authorization.resource.AuthorizationResourceType;
-import com.sequenceiq.authorization.service.ResourceBasedCrnProvider;
+import com.sequenceiq.authorization.service.ResourceCrnAndNameProvider;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.dto.NameOrCrn;
 import com.sequenceiq.cloudbreak.auth.ThreadBasedUserCrnProvider;
 import com.sequenceiq.cloudbreak.auth.altus.Crn;
@@ -66,7 +67,7 @@ import com.sequenceiq.common.api.cloudstorage.query.ConfigQueryEntry;
 import com.sequenceiq.common.api.type.CdpResourceType;
 
 @Service
-public class BlueprintService extends AbstractWorkspaceAwareResourceService<Blueprint> implements ResourceBasedCrnProvider {
+public class BlueprintService extends AbstractWorkspaceAwareResourceService<Blueprint> implements ResourceCrnAndNameProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BlueprintService.class);
 
@@ -430,5 +431,15 @@ public class BlueprintService extends AbstractWorkspaceAwareResourceService<Blue
 
     public BlueprintStatusView getStatusViewByResourceCrn(String resourceCrn) {
         return blueprintRepository.findViewByResourceCrn(resourceCrn);
+    }
+
+    @Override
+    public Optional<String> getNameByCrn(String crn) {
+        return blueprintRepository.findResourceNameByCrnAndAccountId(crn, ThreadBasedUserCrnProvider.getAccountId());
+    }
+
+    @Override
+    public EnumSet<ResourceType> getCrnType() {
+        return EnumSet.of(ResourceType.CLUSTER_TEMPLATE);
     }
 }

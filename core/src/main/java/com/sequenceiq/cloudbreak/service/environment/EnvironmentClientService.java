@@ -1,5 +1,8 @@
 package com.sequenceiq.cloudbreak.service.environment;
 
+import java.util.EnumSet;
+import java.util.Optional;
+
 import javax.inject.Inject;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.WebApplicationException;
@@ -9,7 +12,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.sequenceiq.authorization.resource.AuthorizationResourceType;
-import com.sequenceiq.authorization.service.ResourceBasedCrnProvider;
+import com.sequenceiq.authorization.service.ResourceCrnAndNameProvider;
+import com.sequenceiq.cloudbreak.auth.altus.Crn;
 import com.sequenceiq.cloudbreak.common.exception.CloudbreakServiceException;
 import com.sequenceiq.cloudbreak.common.exception.WebApplicationExceptionMessageExtractor;
 import com.sequenceiq.environment.api.v1.environment.endpoint.EnvironmentEndpoint;
@@ -17,7 +21,7 @@ import com.sequenceiq.environment.api.v1.environment.model.response.DetailedEnvi
 import com.sequenceiq.environment.api.v1.environment.model.response.SimpleEnvironmentResponses;
 
 @Service
-public class EnvironmentClientService implements ResourceBasedCrnProvider {
+public class EnvironmentClientService implements ResourceCrnAndNameProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EnvironmentClientService.class);
 
@@ -87,6 +91,21 @@ public class EnvironmentClientService implements ResourceBasedCrnProvider {
         }
     }
 
+    public String getEnvironmentNameByCrn(String environmentCrn) {
+        try {
+            return environmentEndpoint.getNameByCrn(environmentCrn).getEnvironmentName();
+        } catch (WebApplicationException e) {
+            String errorMessage = webApplicationExceptionMessageExtractor.getErrorMessage(e);
+            String message = String.format("Failed to GET environmentCrn by name due to: %s. %s.", e.getMessage(), errorMessage);
+            LOGGER.error(message, e);
+            throw new CloudbreakServiceException(message, e);
+        } catch (ProcessingException | IllegalStateException e) {
+            String message = String.format("Failed to GET environmentCrn by name due to: '%s' ", e.getMessage());
+            LOGGER.error(message, e);
+            throw new CloudbreakServiceException(message, e);
+        }
+    }
+
     @Override
     public AuthorizationResourceType getResourceType() {
         return AuthorizationResourceType.ENVIRONMENT;
@@ -95,5 +114,19 @@ public class EnvironmentClientService implements ResourceBasedCrnProvider {
     @Override
     public String getResourceCrnByResourceName(String resourceName) {
         return getCrnByName(resourceName);
+    }
+
+    @Override
+    public Optional<String> getNameByCrn(String crn) {
+        try {
+            return Optional.ofNullable(getEnvironmentNameByCrn(crn));
+        } catch (RuntimeException ignored) {
+            return Optional.empty();
+        }
+    }
+
+    @Override
+    public EnumSet<Crn.ResourceType> getCrnType() {
+        return EnumSet.of(Crn.ResourceType.ENVIRONMENT);
     }
 }

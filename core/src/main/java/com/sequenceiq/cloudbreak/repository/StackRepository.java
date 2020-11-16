@@ -221,6 +221,9 @@ public interface StackRepository extends WorkspaceResourceRepository<Stack, Long
     @Query("SELECT s.id FROM Stack s WHERE s.resourceCrn= :crn AND s.workspace.id= :workspaceId AND s.terminated = null")
     Optional<Long> findIdByCrnAndWorkspaceId(@Param("crn") String crn, @Param("workspaceId") Long workspaceId);
 
+    @Query("SELECT s.name FROM Stack s WHERE s.resourceCrn= :crn AND s.workspace.id= :workspaceId AND s.terminated = null")
+    Optional<String> findNameByCrnAndWorkspaceId(@Param("crn") String crn, @Param("workspaceId") Long workspaceId);
+
     @Query("SELECT s.id as id, "
             + "s.resourceCrn as resourceCrn, "
             + "s.name as name, "

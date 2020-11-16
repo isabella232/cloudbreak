@@ -5,6 +5,7 @@ import static com.sequenceiq.redbeams.service.RedbeamsConstants.DATABASE_TEST_RE
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
@@ -23,7 +24,7 @@ import org.springframework.validation.MapBindingResult;
 
 import com.google.common.collect.Sets;
 import com.sequenceiq.authorization.resource.AuthorizationResourceType;
-import com.sequenceiq.authorization.service.ResourceBasedCrnProvider;
+import com.sequenceiq.authorization.service.ResourceCrnAndNameProvider;
 import com.sequenceiq.cloudbreak.auth.ThreadBasedUserCrnProvider;
 import com.sequenceiq.cloudbreak.auth.altus.Crn;
 import com.sequenceiq.cloudbreak.auth.altus.GrpcUmsClient;
@@ -46,7 +47,7 @@ import com.sequenceiq.redbeams.service.drivers.DriverFunctions;
 import com.sequenceiq.redbeams.service.validation.DatabaseConnectionValidator;
 
 @Service
-public class DatabaseConfigService extends AbstractArchivistService<DatabaseConfig> implements ResourceIdProvider, ResourceBasedCrnProvider {
+public class DatabaseConfigService extends AbstractArchivistService<DatabaseConfig> implements ResourceIdProvider, ResourceCrnAndNameProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseConfigService.class);
 
@@ -304,5 +305,15 @@ public class DatabaseConfigService extends AbstractArchivistService<DatabaseConf
     public List<String> getResourceCrnsInAccount() {
         return repository.findAllResourceCrnsByAccountId(ThreadBasedUserCrnProvider.getAccountId())
                 .stream().map(Crn::toString).collect(Collectors.toList());
+    }
+
+    @Override
+    public Optional<String> getNameByCrn(String crn) {
+        return repository.findNameByResourceCrn(crn);
+    }
+
+    @Override
+    public EnumSet<Crn.ResourceType> getCrnType() {
+        return EnumSet.of(Crn.ResourceType.DATABASE);
     }
 }

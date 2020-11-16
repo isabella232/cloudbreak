@@ -24,6 +24,9 @@ public interface RecipeViewRepository extends WorkspaceResourceRepository<Recipe
     @Query("SELECT i.resourceCrn FROM RecipeView i WHERE i.workspace.tenant.name = :tenantId AND i.name = :name")
     Optional<String> findResourceCrnByNameAndTenantId(@Param("name") String name, @Param("tenantId") String tenantId);
 
+    @Query("SELECT i.name FROM RecipeView i WHERE i.workspace.tenant.name = :tenantId AND i.resourceCrn = :resourceCrn")
+    Optional<String> findResourceNameByCrnAndTenantId(@Param("resourceCrn") String resourceCrn, @Param("tenantId") String tenantId);
+
     @Query("SELECT i.resourceCrn FROM RecipeView i WHERE i.workspace.tenant.name = :tenantId")
     List<String> findAllResourceCrnsByTenantId(@Param("tenantId") String tenantId);
 }

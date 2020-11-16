@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 import com.cloudera.thunderhead.service.authorization.AuthorizationProto;
 import com.google.common.collect.Lists;
 import com.sequenceiq.authorization.resource.AuthorizationResourceAction;
-import com.sequenceiq.authorization.utils.AuthorizationMessageUtils;
+import com.sequenceiq.authorization.utils.AuthorizationMessageUtilsService;
 import com.sequenceiq.cloudbreak.auth.ThreadBasedUserCrnProvider;
 import com.sequenceiq.cloudbreak.auth.altus.EntitlementService;
 import com.sequenceiq.cloudbreak.auth.altus.GrpcUmsClient;
@@ -38,9 +38,12 @@ public class UmsResourceAuthorizationService {
     @Inject
     private EntitlementService entitlementService;
 
+    @Inject
+    private AuthorizationMessageUtilsService authorizationMessageUtilsService;
+
     public void checkRightOfUserOnResource(String userCrn, AuthorizationResourceAction action, String resourceCrn) {
         String right = umsRightProvider.getRight(action);
-        checkRightOfUserOnResource(userCrn, right, resourceCrn, AuthorizationMessageUtils.formatTemplate(right, resourceCrn));
+        checkRightOfUserOnResource(userCrn, right, resourceCrn, authorizationMessageUtilsService.formatTemplate(right, resourceCrn));
     }
 
     public Map<String, Boolean> getRightOfUserOnResources(String userCrn, AuthorizationResourceAction action, List<String> resourceCrns) {
@@ -53,7 +56,7 @@ public class UmsResourceAuthorizationService {
             return;
         }
         String right = umsRightProvider.getRight(action);
-        checkRightOfUserOnResources(userCrn, right, resourceCrns, AuthorizationMessageUtils.formatTemplate(right, resourceCrns));
+        checkRightOfUserOnResources(userCrn, right, resourceCrns, authorizationMessageUtilsService.formatTemplate(right, resourceCrns));
     }
 
     public void checkIfUserHasAtLeastOneRight(String userCrn, Map<String, AuthorizationResourceAction> checkedRightsForResources) {
@@ -66,7 +69,7 @@ public class UmsResourceAuthorizationService {
         List<Boolean> rightCheckResults = umsClient.hasRights(userCrn, userCrn, rightCheckList, getRequestId());
         LOGGER.info("Right check results: {}", rightCheckResults);
         if (rightCheckResults.stream().noneMatch(Boolean::booleanValue)) {
-            throw new AccessDeniedException(AuthorizationMessageUtils.formatTemplate(rightCheckList));
+            throw new AccessDeniedException(authorizationMessageUtilsService.formatTemplate(rightCheckList));
         }
     }
 

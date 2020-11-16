@@ -27,6 +27,9 @@ public interface ImageCatalogRepository extends WorkspaceResourceRepository<Imag
     @Query("SELECT i.resourceCrn FROM ImageCatalog i WHERE i.workspace.tenant.name = :tenantId AND i.name = :name")
     Optional<String> findResourceCrnByNameAndTenantId(@Param("name") String name, @Param("tenantId") String tenantId);
 
+    @Query("SELECT i.name FROM ImageCatalog i WHERE i.workspace.tenant.name = :tenantId AND i.resourceCrn = :resourceCrn")
+    Optional<String> findNameByResourceCrnAndTenantId(@Param("resourceCrn") String resourceCrn, @Param("tenantId") String tenantId);
+
     @Query("SELECT i.resourceCrn FROM ImageCatalog i WHERE i.workspace.tenant.name = :tenantId")
     List<String> findAllResourceCrnsByTenantId(@Param("tenantId") String tenantId);
 

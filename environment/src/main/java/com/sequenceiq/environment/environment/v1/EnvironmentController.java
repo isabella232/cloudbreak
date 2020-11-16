@@ -140,6 +140,14 @@ public class EnvironmentController implements EnvironmentEndpoint {
 
     @Override
     @CheckPermissionByResourceCrn(action = AuthorizationResourceAction.DESCRIBE_ENVIRONMENT)
+    public EnvironmentCrnResponse getNameByCrn(@ResourceCrn String environmentCrn) {
+        String accountId = ThreadBasedUserCrnProvider.getAccountId();
+        String name = environmentService.getNameByCrnAndAccountId(environmentCrn, accountId);
+        return environmentApiConverter.crnResponse(name, environmentCrn);
+    }
+
+    @Override
+    @CheckPermissionByResourceCrn(action = AuthorizationResourceAction.DESCRIBE_ENVIRONMENT)
     public DetailedEnvironmentResponse getByCrn(@ResourceCrn @TenantAwareParam String crn) {
         String accountId = ThreadBasedUserCrnProvider.getAccountId();
         EnvironmentDto environmentDto = environmentService.getByCrnAndAccountId(crn, accountId);

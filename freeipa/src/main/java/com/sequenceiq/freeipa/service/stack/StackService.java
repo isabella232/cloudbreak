@@ -1,6 +1,7 @@
 package com.sequenceiq.freeipa.service.stack;
 
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -10,8 +11,9 @@ import javax.inject.Inject;
 import org.springframework.stereotype.Service;
 
 import com.sequenceiq.authorization.resource.AuthorizationResourceType;
-import com.sequenceiq.authorization.service.ResourceBasedCrnProvider;
+import com.sequenceiq.authorization.service.ResourceCrnAndNameProvider;
 import com.sequenceiq.cloudbreak.auth.ThreadBasedUserCrnProvider;
+import com.sequenceiq.cloudbreak.auth.altus.Crn;
 import com.sequenceiq.freeipa.api.v1.freeipa.stack.model.common.Status;
 import com.sequenceiq.freeipa.controller.exception.NotFoundException;
 import com.sequenceiq.freeipa.dto.StackIdWithStatus;
@@ -19,7 +21,7 @@ import com.sequenceiq.freeipa.entity.Stack;
 import com.sequenceiq.freeipa.repository.StackRepository;
 
 @Service
-public class StackService implements ResourceBasedCrnProvider {
+public class StackService implements ResourceCrnAndNameProvider {
 
     @Inject
     private StackRepository stackRepository;
@@ -134,5 +136,19 @@ public class StackService implements ResourceBasedCrnProvider {
     @Override
     public AuthorizationResourceType getResourceType() {
         return AuthorizationResourceType.ENVIRONMENT;
+    }
+
+    @Override
+    public Optional<String> getNameByCrn(String crn) {
+        if (Crn.fromString(crn).getResourceType() == Crn.ResourceType.ENVIRONMENT) {
+            return stackRepository.findByEnvironmentCrnAndAccountId(crn, ThreadBasedUserCrnProvider.getAccountId())
+                    .map(Stack::getName);
+        }
+        return stackRepository.findNameByResourceCrnAndTenantId(ThreadBasedUserCrnProvider.getAccountId(), crn);
+    }
+
+    @Override
+    public EnumSet<Crn.ResourceType> getCrnType() {
+        return EnumSet.of(Crn.ResourceType.FREEIPA, Crn.ResourceType.ENVIRONMENT);
     }
 }

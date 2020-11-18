@@ -58,10 +58,13 @@ import com.sequenceiq.cloudbreak.domain.stack.StackStatus;
 import com.sequenceiq.cloudbreak.domain.stack.cluster.Cluster;
 import com.sequenceiq.cloudbreak.domain.stack.cluster.host.HostGroup;
 import com.sequenceiq.cloudbreak.domain.stack.instance.InstanceGroup;
+import com.sequenceiq.cloudbreak.domain.stack.loadbalancer.LoadBalancer;
+import com.sequenceiq.cloudbreak.domain.stack.loadbalancer.TargetGroup;
 import com.sequenceiq.cloudbreak.exception.BadRequestException;
 import com.sequenceiq.cloudbreak.exception.NotFoundException;
 import com.sequenceiq.cloudbreak.service.datalake.DatalakeResourcesService;
 import com.sequenceiq.cloudbreak.service.environment.EnvironmentClientService;
+import com.sequenceiq.cloudbreak.service.LoadBalancerConfigService;
 import com.sequenceiq.cloudbreak.service.stack.GatewaySecurityGroupDecorator;
 import com.sequenceiq.cloudbreak.service.workspace.WorkspaceService;
 import com.sequenceiq.cloudbreak.tag.ClusterTemplateApplicationTag;
@@ -70,6 +73,8 @@ import com.sequenceiq.cloudbreak.tag.request.CDPTagMergeRequest;
 import com.sequenceiq.cloudbreak.util.PasswordUtil;
 import com.sequenceiq.cloudbreak.workspace.model.Workspace;
 import com.sequenceiq.common.api.telemetry.model.Telemetry;
+import com.sequenceiq.common.api.type.LoadBalancerType;
+import com.sequenceiq.common.api.type.TargetGroupType;
 import com.sequenceiq.environment.api.v1.environment.model.response.DetailedEnvironmentResponse;
 import com.sequenceiq.environment.api.v1.environment.model.response.EnvironmentNetworkResponse;
 
@@ -123,6 +128,9 @@ public class StackV4RequestToStackConverter extends AbstractConversionServiceAwa
     @Inject
     private MeteringServiceFieldResolver meteringServiceFieldResolver;
 
+    @Inject
+    private LoadBalancerConfigService loadBalancerConfigService;
+
     @Override
     public Stack convert(StackV4Request source) {
         Workspace workspace = workspaceService.getForCurrentUser();
@@ -174,6 +182,7 @@ public class StackV4RequestToStackConverter extends AbstractConversionServiceAwa
         stack.setExternalDatabaseCreationType(getIfNotNull(source.getExternalDatabase(), DatabaseRequest::getAvailabilityType));
         determineServiceTypeTag(stack, source.getTags());
         determineServiceFeatureTag(stack, source.getTags());
+        stack.setLoadBalancers(createLoadBalancers(source, stack));
         return stack;
     }
 
@@ -333,6 +342,40 @@ public class StackV4RequestToStackConverter extends AbstractConversionServiceAwa
                     convertedSet.add(ig);
                 });
         return convertedSet;
+    }
+
+    private Set<LoadBalancer> createLoadBalancers(StackV4Request source, Stack stack) {
+        Set<LoadBalancer> loadBalancers = new HashSet<>();
+        Set<TargetGroup> targetGroups = new HashSet<>();
+        // TODO expand this to data hubs
+        if (StackType.DATALAKE.equals(source.getType())) {
+            LOGGER.info("Setting up load balancers for stack {}", source.getName());
+            Set<String> knoxGatewayGroupNames = loadBalancerConfigService.getKnoxGatewayGroups(stack);
+            Set<InstanceGroup> knoxGatewayGroups = stack.getInstanceGroups().stream()
+                .filter(ig -> knoxGatewayGroupNames.contains(ig.getGroupName()))
+                .collect(Collectors.toSet());
+            if (!knoxGatewayGroups.isEmpty()) {
+                LOGGER.info("Knox gateway instance found; enabling Knox load balancer configuration.");
+                TargetGroup targetGroup = new TargetGroup();
+                targetGroup.setType(TargetGroupType.KNOX.name());
+                targetGroup.setInstanceGroups(knoxGatewayGroups);
+                targetGroups.add(targetGroup);
+                knoxGatewayGroups.forEach(ig -> ig.addTargetGroup(targetGroup));
+            }
+            // TODO create target group for CM instances
+        }
+
+        if (!targetGroups.isEmpty()) {
+            LoadBalancer loadBalancer = new LoadBalancer();
+            loadBalancer.setStack(stack);
+            // TODO actually figure out the type we need here
+            loadBalancer.setType(LoadBalancerType.PRIVATE.name());
+            loadBalancer.setTargetGroups(targetGroups);
+            targetGroups.forEach(tg -> tg.setLoadBalancer(loadBalancer));
+            loadBalancers.add(loadBalancer);
+        }
+
+        return loadBalancers;
     }
 
     private void updateCluster(StackV4Request source, Stack stack, Workspace workspace) {

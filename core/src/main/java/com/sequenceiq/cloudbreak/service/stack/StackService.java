@@ -198,6 +198,12 @@ public class StackService implements ResourceIdProvider {
     @Inject
     private SdxClientService sdxClientService;
 
+    @Inject
+    private LoadBalancerService loadBalancerService;
+
+    @Inject
+    private TargetGroupService targetGroupService;
+
     @Value("${cb.nginx.port}")
     private Integer nginxPort;
 
@@ -511,6 +517,12 @@ public class StackService implements ResourceIdProvider {
 
         measure(() -> instanceMetaDataService.saveAll(savedStack.getInstanceMetaDataAsList()),
                 LOGGER, "Instance metadatas saved in {} ms for stack {}", stackName);
+
+        measure(() -> loadBalancerService.saveAll(savedStack.getLoadBalancers()),
+            LOGGER, "Load balancers saved in {} ms for stack {}", stackName);
+
+        measure(() -> targetGroupService.saveAll(savedStack.getTargetGroupAsList()),
+            LOGGER, "Target groups saved in {} ms for stack {}", stackName);
 
         try {
             imageService.create(savedStack, platformString, imgFromCatalog);

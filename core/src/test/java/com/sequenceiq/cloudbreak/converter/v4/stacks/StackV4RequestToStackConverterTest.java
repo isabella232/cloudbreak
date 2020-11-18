@@ -10,6 +10,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.sequenceiq.cloudbreak.service.LoadBalancerConfigService;
+import com.sequenceiq.common.api.type.TargetGroupType;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -18,6 +20,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 
+import java.util.Set;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -146,6 +149,9 @@ public class StackV4RequestToStackConverterTest extends AbstractJsonConverterTes
 
     @Mock
     private CostTagging costTagging;
+
+    @Mock
+    private LoadBalancerConfigService loadBalancerConfigService;
 
     private Credential credential;
 
@@ -300,6 +306,40 @@ public class StackV4RequestToStackConverterTest extends AbstractJsonConverterTes
         assertEquals(expectedDataLakeId, result.getDatalakeResourceId());
     }
 
+    @Test
+    public void testConvertWithKnoxLoadBalancer() {
+        initMocks();
+        ReflectionTestUtils.setField(underTest, "defaultRegions", "AWS:eu-west-2");
+        StackV4Request request = getRequest("stack-datalake-with-instancegroups.json");
+
+        given(credentialClientService.getByCrn(anyString())).willReturn(credential);
+        given(credentialClientService.getByName(anyString())).willReturn(credential);
+        given(providerParameterCalculator.get(request)).willReturn(getMappable());
+        given(conversionService.convert(any(ClusterV4Request.class), eq(Cluster.class))).willReturn(new Cluster());
+        given(telemetryConverter.convert(null, StackType.DATALAKE)).willReturn(new Telemetry());
+        given(loadBalancerConfigService.getKnoxGatewayGroups(any(Stack.class))).willReturn(Set.of("master"));
+        // WHEN
+        Stack stack = underTest.convert(request);
+        // THEN
+        assertAllFieldsNotNull(
+            stack,
+            Arrays.asList("description", "cluster", "environmentCrn", "gatewayPort", "useCcm", "network", "securityConfig",
+                "version", "created", "platformVariant", "cloudPlatform",
+                "customHostname", "customDomain", "clusterNameAsSubdomain", "hostgroupNameAsHostname", "parameters", "creator",
+                "environmentCrn", "terminated", "datalakeResourceId", "type", "inputs", "failurePolicy", "resourceCrn", "minaSshdServiceId",
+                "externalDatabaseCreationType"));
+        assertEquals("eu-west-1", stack.getRegion());
+        assertEquals("AWS", stack.getCloudPlatform());
+        assertEquals("mystack", stack.getName());
+        assertEquals(1, stack.getLoadBalancers().size());
+        assertEquals(1, stack.getLoadBalancers().iterator().next().getTargetGroups().size());
+        assertEquals(TargetGroupType.KNOX.name(), stack.getLoadBalancers().iterator().next().getTargetGroups().iterator().next().getType());
+        verify(telemetryConverter, times(1)).convert(null, StackType.DATALAKE);
+        verify(environmentClientService, times(1)).getByCrn(anyString());
+        verify(gatewaySecurityGroupDecorator, times(1))
+            .extendGatewaySecurityGroupWithDefaultGatewayCidrs(any(Stack.class), any(Tunnel.class));
+    }
+
     @Override
     public Class<StackV4Request> getRequestClass() {
         return StackV4Request.class;
@@ -311,6 +351,7 @@ public class StackV4RequestToStackConverterTest extends AbstractJsonConverterTes
         SecurityGroup securityGroup = new SecurityGroup();
         instanceGroup.setSecurityGroup(securityGroup);
         instanceGroup.setInstanceGroupType(InstanceGroupType.GATEWAY);
+        instanceGroup.setGroupName("master");
         given(conversionService.convert(any(Object.class), any(TypeDescriptor.class), any(TypeDescriptor.class)))
                 .willReturn(new HashSet<>(Collections.singletonList(instanceGroup)));
         given(conversionService.convert(any(Object.class), any(TypeDescriptor.class), any(TypeDescriptor.class)))

@@ -14,6 +14,7 @@ import javax.inject.Inject;
 import org.springframework.stereotype.Service;
 
 import com.google.common.collect.Lists;
+import com.sequenceiq.cloudbreak.cloud.aws.loadbalancer.AwsLoadBalancer;
 import com.sequenceiq.cloudbreak.cloud.aws.view.AwsGroupView;
 import com.sequenceiq.cloudbreak.cloud.aws.view.AwsInstanceView;
 import com.sequenceiq.cloudbreak.cloud.context.AuthenticatedContext;
@@ -91,6 +92,7 @@ public class CloudFormationTemplateBuilder {
         model.put("outboundInternetTraffic", context.outboundInternetTraffic);
         model.put("vpcCidrs", context.vpcCidrs);
         model.put("prefixListIds", context.prefixListIds);
+        model.put("loadBalancers", context.loadBalancers == null ? new ArrayList<>() : context.loadBalancers);
         try {
             String template = freeMarkerTemplateUtils.processTemplateIntoString(new Template("aws-template", context.template, freemarkerConfiguration), model);
             return template.replaceAll("\\t|\\n| [\\s]+", "");
@@ -177,6 +179,8 @@ public class CloudFormationTemplateBuilder {
 
         private List<String> prefixListIds;
 
+        private List<AwsLoadBalancer> loadBalancers;
+
         public ModelContext withAuthenticatedContext(AuthenticatedContext ac) {
             this.ac = ac;
             return this;
@@ -254,6 +258,11 @@ public class CloudFormationTemplateBuilder {
 
         public ModelContext withEncryptedAMIByGroupName(Map<String, String> encryptedAMIByGroupName) {
             this.encryptedAMIByGroupName.putAll(encryptedAMIByGroupName);
+            return this;
+        }
+
+        public ModelContext withLoadBalancers(List<AwsLoadBalancer> loadBalancers) {
+            this.loadBalancers = loadBalancers;
             return this;
         }
 

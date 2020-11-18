@@ -2,6 +2,7 @@ package com.sequenceiq.cloudbreak.cloud.aws;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -23,9 +24,16 @@ import com.amazonaws.services.cloudformation.model.DescribeStackResourceResult;
 import com.amazonaws.services.cloudformation.model.DescribeStacksRequest;
 import com.amazonaws.services.cloudformation.model.Output;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
+import com.amazonaws.services.elasticloadbalancingv2.AmazonElasticLoadBalancingClient;
+import com.amazonaws.services.elasticloadbalancingv2.model.DescribeLoadBalancersRequest;
+import com.amazonaws.services.elasticloadbalancingv2.model.DescribeLoadBalancersResult;
+import com.amazonaws.services.elasticloadbalancingv2.model.DescribeTargetGroupsRequest;
+import com.amazonaws.services.elasticloadbalancingv2.model.DescribeTargetGroupsResult;
+import com.amazonaws.services.elasticloadbalancingv2.model.LoadBalancer;
 import com.google.common.base.Splitter;
 import com.sequenceiq.cloudbreak.cloud.aws.client.AmazonAutoScalingRetryClient;
 import com.sequenceiq.cloudbreak.cloud.aws.client.AmazonCloudFormationRetryClient;
+import com.sequenceiq.cloudbreak.cloud.aws.client.AmazonElbV2RetryClient;
 import com.sequenceiq.cloudbreak.cloud.aws.view.AwsCredentialView;
 import com.sequenceiq.cloudbreak.cloud.context.AuthenticatedContext;
 import com.sequenceiq.cloudbreak.cloud.exception.CloudConnectorException;
@@ -146,8 +154,45 @@ public class CloudFormationStackUtil {
         return instanceIds;
     }
 
+    public String getLoadBalancerArn(AmazonElbV2RetryClient amazonELBClient, String name) {
+        DescribeLoadBalancersResult describeLoadBalancersResult = amazonELBClient
+            .describeLoadBalancer(new DescribeLoadBalancersRequest().withNames(Collections.singletonList(name)));
+        if (!describeLoadBalancersResult.getLoadBalancers().isEmpty()
+                && describeLoadBalancersResult.getLoadBalancers().get(0) != null) {
+            return describeLoadBalancersResult.getLoadBalancers().get(0).getLoadBalancerArn();
+        }
+        return null;
+    }
+
+    public String getTargetGroupArn(AmazonElbV2RetryClient amazonELBClient, String name) {
+        DescribeTargetGroupsResult describeTargetGroupsResult = amazonELBClient
+            .describeLoadBalancer(new DescribeTargetGroupsRequest().withNames(Collections.singletonList(name)));
+        if (!describeTargetGroupsResult.getTargetGroups().isEmpty()
+                && describeTargetGroupsResult.getTargetGroups().get(0) != null) {
+            return describeTargetGroupsResult.getTargetGroups().get(0).getTargetGroupArn();
+        }
+        return null;
+    }
+
     public DescribeInstancesRequest createDescribeInstancesRequest(Collection<String> instanceIds) {
         return new DescribeInstancesRequest().withInstanceIds(instanceIds);
     }
 
+    public LoadBalancer getLoadBalancerByLogicalId(AuthenticatedContext ac, String logicalId, String region) {
+        String cFStackName = getCfStackName(ac);
+        AmazonCloudFormationRetryClient amazonCfClient =
+            awsClient.createCloudFormationRetryClient(new AwsCredentialView(ac.getCloudCredential()), region);
+        AmazonElasticLoadBalancingClient amazonElbClient =
+            awsClient.createElasticLoadBalancingClient(new AwsCredentialView(ac.getCloudCredential()), region);
+
+        DescribeStackResourceResult stackResourceResult = amazonCfClient.describeStackResource(new DescribeStackResourceRequest()
+            .withStackName(cFStackName)
+            .withLogicalResourceId(logicalId));
+        String loadBalancerArn = stackResourceResult.getStackResourceDetail().getPhysicalResourceId();
+
+        DescribeLoadBalancersResult loadBalancersResult = amazonElbClient.describeLoadBalancers(new DescribeLoadBalancersRequest()
+            .withLoadBalancerArns(Collections.singletonList(loadBalancerArn)));
+
+        return loadBalancersResult.getLoadBalancers().get(0);
+    }
 }

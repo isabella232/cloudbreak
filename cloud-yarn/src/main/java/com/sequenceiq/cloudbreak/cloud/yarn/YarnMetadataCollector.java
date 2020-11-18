@@ -1,6 +1,8 @@
 package com.sequenceiq.cloudbreak.cloud.yarn;
 
+import com.sequenceiq.cloudbreak.cloud.model.CloudLoadBalancerMetadata;
 import java.net.MalformedURLException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -131,5 +133,11 @@ public class YarnMetadataCollector implements MetadataCollector {
             }
         }
         return cloudInstances;
+    }
+
+    @Override
+    public List<CloudLoadBalancerMetadata> collectLoadBalancer(AuthenticatedContext ac, List<String> gatewayGroupNames) {
+        // no-op
+        return Collections.emptyList();
     }
 }

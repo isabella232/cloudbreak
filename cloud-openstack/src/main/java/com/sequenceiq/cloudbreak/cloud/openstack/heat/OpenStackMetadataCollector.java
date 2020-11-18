@@ -1,6 +1,8 @@
 package com.sequenceiq.cloudbreak.cloud.openstack.heat;
 
+import com.sequenceiq.cloudbreak.cloud.model.CloudLoadBalancerMetadata;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -79,5 +81,11 @@ public class OpenStackMetadataCollector implements MetadataCollector {
         }
 
         return results;
+    }
+
+    @Override
+    public List<CloudLoadBalancerMetadata> collectLoadBalancer(AuthenticatedContext ac, List<String> gatewayGroupNames) {
+        // no-op
+        return Collections.emptyList();
     }
 }

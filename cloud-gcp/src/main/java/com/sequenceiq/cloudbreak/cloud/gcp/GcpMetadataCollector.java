@@ -1,7 +1,9 @@
 package com.sequenceiq.cloudbreak.cloud.gcp;
 
+import com.sequenceiq.cloudbreak.cloud.model.CloudLoadBalancerMetadata;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -112,5 +114,11 @@ public class GcpMetadataCollector implements MetadataCollector {
             cloudVmMetaDataStatus = new CloudVmMetaDataStatus(status, CloudInstanceMetaData.EMPTY_METADATA);
         }
         return cloudVmMetaDataStatus;
+    }
+
+    @Override
+    public List<CloudLoadBalancerMetadata> collectLoadBalancer(AuthenticatedContext ac, List<String> gatewayGroupNames) {
+        // no-op
+        return Collections.emptyList();
     }
 }

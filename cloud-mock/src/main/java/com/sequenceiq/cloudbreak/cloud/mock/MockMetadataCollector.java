@@ -1,6 +1,8 @@
 package com.sequenceiq.cloudbreak.cloud.mock;
 
+import com.sequenceiq.cloudbreak.cloud.model.CloudLoadBalancerMetadata;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -42,5 +44,11 @@ public class MockMetadataCollector implements MetadataCollector {
         } catch (Exception e) {
             throw new CloudbreakServiceException("can't convert to object", e);
         }
+    }
+
+    @Override
+    public List<CloudLoadBalancerMetadata> collectLoadBalancer(AuthenticatedContext ac, List<String> gatewayGroupNames) {
+        // no-op
+        return Collections.emptyList();
     }
 }

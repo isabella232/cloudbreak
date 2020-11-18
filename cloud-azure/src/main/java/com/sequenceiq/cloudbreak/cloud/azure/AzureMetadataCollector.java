@@ -1,6 +1,8 @@
 package com.sequenceiq.cloudbreak.cloud.azure;
 
+import com.sequenceiq.cloudbreak.cloud.model.CloudLoadBalancerMetadata;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -123,6 +125,12 @@ public class AzureMetadataCollector implements MetadataCollector {
                 .collect(Collectors.toMap(
                         template -> azureUtils.getPrivateInstanceId(stackName, template.getGroupName(), Long.toString(template.getPrivateId())),
                         template -> template));
+    }
+
+    @Override
+    public List<CloudLoadBalancerMetadata> collectLoadBalancer(AuthenticatedContext ac, List<String> gatewayGroupNames) {
+        // no-op
+        return Collections.emptyList();
     }
 
 }

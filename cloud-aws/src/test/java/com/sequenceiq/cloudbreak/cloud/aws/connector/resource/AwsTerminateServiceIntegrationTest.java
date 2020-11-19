@@ -10,8 +10,8 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Optional;
-
 import java.util.function.Supplier;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.jupiter.api.Assertions;

@@ -1,10 +1,8 @@
 package com.sequenceiq.cloudbreak.service;
 
 import com.sequenceiq.cloudbreak.domain.stack.loadbalancer.TargetGroup;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -62,11 +60,14 @@ public class LoadBalancerConfigService {
     }
 
     public String generateLoadBalancerEndpoint(Stack stack, LoadBalancerType type) {
-        List<String> s = Arrays.asList(stack.getName(), ENDPOINT_SUFFIX);
+        StringBuilder name = new StringBuilder()
+            .append(stack.getName())
+            .append('-')
+            .append(ENDPOINT_SUFFIX);
         if (LoadBalancerType.PUBLIC.equals(type)) {
-            s.add(PUBLIC_SUFFIX);
+            name.append('-').append(PUBLIC_SUFFIX);
         }
-        return String.join("-", s);
+        return name.toString();
     }
 
     public Set<Integer> getPortsForTargetGroup(TargetGroup targetGroup) {

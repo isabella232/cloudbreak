@@ -29,6 +29,10 @@ public class TargetGroup implements ProvisionEntity {
     @ManyToMany(fetch = FetchType.EAGER)
     private Set<InstanceGroup> instanceGroups;
 
+    public Long getId() {
+        return id;
+    }
+
     public String getType() {
         return type;
     }

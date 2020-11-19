@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -92,7 +93,7 @@ public class CloudFormationTemplateBuilder {
         model.put("outboundInternetTraffic", context.outboundInternetTraffic);
         model.put("vpcCidrs", context.vpcCidrs);
         model.put("prefixListIds", context.prefixListIds);
-        model.put("loadBalancers", context.loadBalancers == null ? new ArrayList<>() : context.loadBalancers);
+        model.put("loadBalancers", Optional.ofNullable(context.loadBalancers).orElse(Collections.emptyList()));
         try {
             String template = freeMarkerTemplateUtils.processTemplateIntoString(new Template("aws-template", context.template, freemarkerConfiguration), model);
             return template.replaceAll("\\t|\\n| [\\s]+", "");

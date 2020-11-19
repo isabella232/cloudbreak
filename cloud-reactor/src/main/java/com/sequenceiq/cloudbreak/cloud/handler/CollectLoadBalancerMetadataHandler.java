@@ -42,7 +42,7 @@ public class CollectLoadBalancerMetadataHandler implements CloudPlatformEventHan
             CloudConnector<Object> connector = cloudPlatformConnectors.get(request.getCloudContext().getPlatformVariant());
             AuthenticatedContext ac = connector.authentication().authenticate(request.getCloudContext(), request.getCloudCredential());
 
-            List<CloudLoadBalancerMetadata> loadBalancerStatuses = connector.metadata() .collectLoadBalancer(ac, request.getGatewayGroupNames());
+            List<CloudLoadBalancerMetadata> loadBalancerStatuses = connector.metadata().collectLoadBalancer(ac, request.getTypesPresentInStack());
             CollectLoadBalancerMetadataResult collectLBMetadataResult =
                 new CollectLoadBalancerMetadataResult(request.getResourceId(), loadBalancerStatuses);
 

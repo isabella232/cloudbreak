@@ -178,24 +178,22 @@ public class AwsMetadataCollector implements MetadataCollector {
     }
 
     @Override
-    public List<CloudLoadBalancerMetadata> collectLoadBalancer(AuthenticatedContext ac, List<String> gatewayGroupNames) {
+    public List<CloudLoadBalancerMetadata> collectLoadBalancer(AuthenticatedContext ac, List<String> loadBalancerTypes) {
         LOGGER.debug("Collect AWS load balanacer metadata, for cluster {}", ac.getCloudContext().getName());
 
         String region = ac.getCloudContext().getLocation().getRegion().value();
 
         List<CloudLoadBalancerMetadata> cloudLoadBalancerMetadata = new ArrayList<>();
         try {
-            for (String groupName : gatewayGroupNames) {
-                String loadBalancerName = AwsLoadBalancer.getLoadBalancerName(AwsLoadBalancerScheme.PRIVATE);
+            for (String type : loadBalancerTypes) {
+                String loadBalancerName = AwsLoadBalancer.getLoadBalancerName(AwsLoadBalancerScheme.valueOf(type));
                 LoadBalancer loadBalancer = cloudFormationStackUtil.getLoadBalancerByLogicalId(ac, loadBalancerName, region);
                 cloudLoadBalancerMetadata.add(new CloudLoadBalancerMetadata(
-                    groupName,
-                    LoadBalancerType.PRIVATE,
+                    LoadBalancerType.valueOf(type),
                     loadBalancer.getDNSName(),
                     loadBalancer.getCanonicalHostedZoneId(),
                     null
                 ));
-                // TODO public endpoints
             }
             return cloudLoadBalancerMetadata;
         } catch (RuntimeException e) {

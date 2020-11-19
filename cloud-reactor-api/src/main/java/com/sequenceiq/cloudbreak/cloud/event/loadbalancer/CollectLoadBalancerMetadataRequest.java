@@ -8,14 +8,14 @@ import com.sequenceiq.cloudbreak.cloud.model.CloudCredential;
 
 public class CollectLoadBalancerMetadataRequest extends CloudPlatformRequest<CollectLoadBalancerMetadataResult> {
 
-    private final List<String> gatewayGroupNames;
+    private final List<String> typesPresentInStack;
 
-    public CollectLoadBalancerMetadataRequest(CloudContext cloudContext, CloudCredential cloudCredential, List<String> gatewayGroupNames) {
+    public CollectLoadBalancerMetadataRequest(CloudContext cloudContext, CloudCredential cloudCredential, List<String> typesPresentInStack) {
         super(cloudContext, cloudCredential);
-        this.gatewayGroupNames = gatewayGroupNames;
+        this.typesPresentInStack = typesPresentInStack;
     }
 
-    public List<String> getGatewayGroupNames() {
-        return gatewayGroupNames;
+    public List<String> getTypesPresentInStack() {
+        return typesPresentInStack;
     }
 }

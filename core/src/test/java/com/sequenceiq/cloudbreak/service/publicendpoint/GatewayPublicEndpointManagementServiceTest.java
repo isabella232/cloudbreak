@@ -12,8 +12,8 @@ import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
-
 import java.util.Set;
+
 import org.bouncycastle.pkcs.PKCS10CertificationRequest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;

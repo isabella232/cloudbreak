@@ -1,7 +1,5 @@
 package com.sequenceiq.cloudbreak.service.publicendpoint;
 
-import com.sequenceiq.cloudbreak.domain.stack.loadbalancer.LoadBalancer;
-import com.sequenceiq.cloudbreak.service.stack.LoadBalancerService;
 import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,9 +21,11 @@ import com.sequenceiq.cloudbreak.domain.SecurityConfig;
 import com.sequenceiq.cloudbreak.domain.stack.Stack;
 import com.sequenceiq.cloudbreak.domain.stack.cluster.Cluster;
 import com.sequenceiq.cloudbreak.domain.stack.instance.InstanceMetaData;
+import com.sequenceiq.cloudbreak.domain.stack.loadbalancer.LoadBalancer;
 import com.sequenceiq.cloudbreak.service.cluster.ClusterService;
 import com.sequenceiq.cloudbreak.service.environment.EnvironmentClientService;
 import com.sequenceiq.cloudbreak.service.securityconfig.SecurityConfigService;
+import com.sequenceiq.cloudbreak.service.stack.LoadBalancerService;
 import com.sequenceiq.environment.api.v1.environment.model.response.DetailedEnvironmentResponse;
 
 @Service
@@ -188,8 +188,6 @@ public class GatewayPublicEndpointManagementService extends BasePublicEndpointMa
                     endpoint.get(), environmentName, loadBalancer.getIp());
                 getDnsManagementService().deleteDnsEntryWithIp(userCrn, accountId, endpoint.get(),
                     environmentName, false, List.of(loadBalancer.getIp()));
-            } else {
-                int a = 1;
             }
         }
     }

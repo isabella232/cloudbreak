@@ -74,6 +74,7 @@ import com.sequenceiq.cloudbreak.service.image.ImageService;
 import com.sequenceiq.cloudbreak.service.LoadBalancerConfigService;
 import com.sequenceiq.cloudbreak.service.securityrule.SecurityRuleService;
 import com.sequenceiq.cloudbreak.service.stack.DefaultRootVolumeSizeProvider;
+import com.sequenceiq.cloudbreak.service.stack.InstanceGroupService;
 import com.sequenceiq.cloudbreak.service.stack.LoadBalancerService;
 import com.sequenceiq.cloudbreak.service.stack.TargetGroupService;
 import com.sequenceiq.cloudbreak.template.filesystem.FileSystemConfigurationsViewProvider;
@@ -173,6 +174,9 @@ public class StackToCloudStackConverterTest {
 
     @Mock
     private TargetGroupService targetGroupService;
+
+    @Mock
+    private InstanceGroupService instanceGroupService;
 
     @Mock
     private LoadBalancerConfigService loadBalancerConfigService;
@@ -958,13 +962,13 @@ public class StackToCloudStackConverterTest {
         when(instanceGroup2.getNotDeletedInstanceMetaDataSet()).thenReturn(Collections.emptySet());
         when(instanceGroup2.getStack()).thenReturn(stack);
         TargetGroup targetGroup = mock(TargetGroup.class);
-        when(targetGroup.getInstanceGroups()).thenReturn(Set.of(instanceGroup1, instanceGroup2));
         when(targetGroup.getType()).thenReturn(TargetGroupType.KNOX.name());
         LoadBalancer loadBalancer = mock(LoadBalancer.class);
         when(loadBalancer.getType()).thenReturn(LoadBalancerType.PRIVATE.name());
         when(loadBalancer.getId()).thenReturn(1L);
         when(loadBalancerService.findByStackId(anyLong())).thenReturn(Set.of(loadBalancer));
         when(targetGroupService.findByLoadBalancerId(anyLong())).thenReturn(Set.of(targetGroup));
+        when(instanceGroupService.findByTargetGroupId(anyLong())).thenReturn(Set.of(instanceGroup1, instanceGroup2));
         when(loadBalancerConfigService.getPortsForTargetGroup(any(TargetGroup.class))).thenReturn(Set.of(443));
 
         CloudStack result = underTest.convert(stack);

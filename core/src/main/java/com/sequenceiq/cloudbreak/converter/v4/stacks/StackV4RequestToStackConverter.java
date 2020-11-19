@@ -34,6 +34,8 @@ import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.request.database.Databas
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.request.environment.placement.PlacementSettingsV4Request;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.request.image.ImageSettingsV4Request;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.request.tags.TagsV4Request;
+import com.sequenceiq.cloudbreak.auth.ThreadBasedUserCrnProvider;
+import com.sequenceiq.cloudbreak.auth.altus.EntitlementService;
 import com.sequenceiq.cloudbreak.cloud.PlatformParametersConsts;
 import com.sequenceiq.cloudbreak.cloud.model.Image;
 import com.sequenceiq.cloudbreak.cloud.model.Platform;
@@ -130,6 +132,9 @@ public class StackV4RequestToStackConverter extends AbstractConversionServiceAwa
 
     @Inject
     private LoadBalancerConfigService loadBalancerConfigService;
+
+    @Inject
+    private EntitlementService entitlementService;
 
     @Override
     public Stack convert(StackV4Request source) {
@@ -348,7 +353,8 @@ public class StackV4RequestToStackConverter extends AbstractConversionServiceAwa
         Set<LoadBalancer> loadBalancers = new HashSet<>();
         Set<TargetGroup> targetGroups = new HashSet<>();
         // TODO expand this to data hubs
-        if (StackType.DATALAKE.equals(source.getType())) {
+        if (StackType.DATALAKE.equals(source.getType()) &&
+            entitlementService.datalakeLoadBalancerEnabled(ThreadBasedUserCrnProvider.getUserCrn(), ThreadBasedUserCrnProvider.getAccountId())) {
             LOGGER.info("Setting up load balancers for stack {}", source.getName());
             Set<String> knoxGatewayGroupNames = loadBalancerConfigService.getKnoxGatewayGroups(stack);
             Set<InstanceGroup> knoxGatewayGroups = stack.getInstanceGroups().stream()
@@ -362,13 +368,13 @@ public class StackV4RequestToStackConverter extends AbstractConversionServiceAwa
                 targetGroups.add(targetGroup);
                 knoxGatewayGroups.forEach(ig -> ig.addTargetGroup(targetGroup));
             }
-            // TODO create target group for CM instances
+            // TODO CB-9368 - create target group for CM instances
         }
 
         if (!targetGroups.isEmpty()) {
             LoadBalancer loadBalancer = new LoadBalancer();
             loadBalancer.setStack(stack);
-            // TODO actually figure out the type we need here
+            // TODO CB-9900 make this dynamic based on network type instead of hardcoded
             loadBalancer.setType(LoadBalancerType.PRIVATE.name());
             loadBalancer.setTargetGroups(targetGroups);
             targetGroups.forEach(tg -> tg.setLoadBalancer(loadBalancer));

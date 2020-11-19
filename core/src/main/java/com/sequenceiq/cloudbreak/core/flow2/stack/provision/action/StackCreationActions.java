@@ -49,8 +49,8 @@ import com.sequenceiq.cloudbreak.core.flow2.stack.StackFailureContext;
 import com.sequenceiq.cloudbreak.core.flow2.stack.provision.StackCreationEvent;
 import com.sequenceiq.cloudbreak.core.flow2.stack.provision.StackCreationState;
 import com.sequenceiq.cloudbreak.domain.FailurePolicy;
+import com.sequenceiq.cloudbreak.domain.stack.loadbalancer.LoadBalancer;
 import com.sequenceiq.cloudbreak.domain.stack.Stack;
-import com.sequenceiq.cloudbreak.domain.stack.instance.InstanceGroup;
 import com.sequenceiq.cloudbreak.domain.stack.instance.InstanceMetaData;
 import com.sequenceiq.cloudbreak.domain.view.StackView;
 import com.sequenceiq.cloudbreak.logger.MDCBuilder;
@@ -61,8 +61,8 @@ import com.sequenceiq.cloudbreak.reactor.api.event.stack.userdata.CreateUserData
 import com.sequenceiq.cloudbreak.reactor.api.event.stack.userdata.CreateUserDataSuccess;
 import com.sequenceiq.cloudbreak.service.image.ImageService;
 import com.sequenceiq.cloudbreak.service.metrics.MetricType;
+import com.sequenceiq.cloudbreak.service.stack.LoadBalancerService;
 import com.sequenceiq.cloudbreak.service.stack.StackService;
-import com.sequenceiq.common.api.type.InstanceGroupType;
 import com.sequenceiq.flow.core.Flow;
 import com.sequenceiq.flow.core.FlowParameters;
 
@@ -86,6 +86,9 @@ public class StackCreationActions {
 
     @Inject
     private StackService stackService;
+
+    @Inject
+    private LoadBalancerService loadBalancerService;
 
     @Bean(name = "VALIDATION_STATE")
     public Action<?, ?> provisioningValidationAction() {
@@ -222,12 +225,11 @@ public class StackCreationActions {
 
             @Override
             protected Selectable createRequest(StackContext context) {
-                List<String> gatewayGroupNames = context.getStack().getInstanceGroups().stream()
-                    .filter(g -> g.getInstanceGroupType() == InstanceGroupType.GATEWAY)
-                    .map(InstanceGroup::getGroupName)
+                List<String> loadBalancerTypes = loadBalancerService.findByStackId(context.getStack().getId()).stream()
+                    .map(LoadBalancer::getType)
                     .collect(Collectors.toList());
                 return new CollectLoadBalancerMetadataRequest(context.getCloudContext(), context.getCloudCredential(),
-                    gatewayGroupNames);
+                    loadBalancerTypes);
             }
         };
     }

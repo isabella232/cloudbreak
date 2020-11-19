@@ -4,8 +4,6 @@ import com.sequenceiq.common.api.type.LoadBalancerType;
 
 public class CloudLoadBalancerMetadata {
 
-    private final String groupName;
-
     private final LoadBalancerType type;
 
     private final String cloudDns;
@@ -14,16 +12,11 @@ public class CloudLoadBalancerMetadata {
 
     private final String ip;
 
-    public CloudLoadBalancerMetadata(String groupName, LoadBalancerType type, String cloudDns, String hostedZoneId, String ip) {
-        this.groupName = groupName;
+    public CloudLoadBalancerMetadata(LoadBalancerType type, String cloudDns, String hostedZoneId, String ip) {
         this.type = type;
         this.cloudDns = cloudDns;
         this.hostedZoneId = hostedZoneId;
         this.ip = ip;
-    }
-
-    public String getGroupName() {
-        return groupName;
     }
 
     public LoadBalancerType getType() {

@@ -73,8 +73,8 @@ public class InstanceGroup implements ProvisionEntity, Comparable<InstanceGroup>
 
     private int initialNodeCount;
 
-    @ManyToMany(mappedBy = "instanceGroups", fetch = FetchType.EAGER)
-    private Set<TargetGroup> targetGroups;
+    @ManyToMany(mappedBy = "instanceGroups", fetch = FetchType.LAZY)
+    private Set<TargetGroup> targetGroups = new HashSet<>();
 
     public String getGroupName() {
         return groupName;
@@ -223,9 +223,6 @@ public class InstanceGroup implements ProvisionEntity, Comparable<InstanceGroup>
     }
 
     public void addTargetGroup(TargetGroup targetGroup) {
-        if (targetGroups == null) {
-            targetGroups = new HashSet<>();
-        }
         targetGroups.add(targetGroup);
     }
 

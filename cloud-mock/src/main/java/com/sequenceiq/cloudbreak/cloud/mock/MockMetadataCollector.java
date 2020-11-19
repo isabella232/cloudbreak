@@ -1,6 +1,5 @@
 package com.sequenceiq.cloudbreak.cloud.mock;
 
-import com.sequenceiq.cloudbreak.cloud.model.CloudLoadBalancerMetadata;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -16,6 +15,7 @@ import org.springframework.stereotype.Service;
 import com.sequenceiq.cloudbreak.cloud.MetadataCollector;
 import com.sequenceiq.cloudbreak.cloud.context.AuthenticatedContext;
 import com.sequenceiq.cloudbreak.cloud.model.CloudInstance;
+import com.sequenceiq.cloudbreak.cloud.model.CloudLoadBalancerMetadata;
 import com.sequenceiq.cloudbreak.cloud.model.CloudResource;
 import com.sequenceiq.cloudbreak.cloud.model.CloudVmMetaDataStatus;
 import com.sequenceiq.cloudbreak.common.exception.CloudbreakServiceException;
@@ -47,7 +47,7 @@ public class MockMetadataCollector implements MetadataCollector {
     }
 
     @Override
-    public List<CloudLoadBalancerMetadata> collectLoadBalancer(AuthenticatedContext ac, List<String> gatewayGroupNames) {
+    public List<CloudLoadBalancerMetadata> collectLoadBalancer(AuthenticatedContext ac, List<String> loadBalancerTypes) {
         // no-op
         return Collections.emptyList();
     }

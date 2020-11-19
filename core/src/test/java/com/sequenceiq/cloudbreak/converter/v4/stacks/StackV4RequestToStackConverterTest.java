@@ -10,8 +10,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.sequenceiq.cloudbreak.service.LoadBalancerConfigService;
-import com.sequenceiq.common.api.type.TargetGroupType;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -23,6 +21,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -38,6 +37,7 @@ import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.request.StackV4Request;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.request.authentication.StackAuthenticationV4Request;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.request.cluster.ClusterV4Request;
 import com.sequenceiq.cloudbreak.api.endpoint.v4.stacks.request.instancegroup.InstanceGroupV4Request;
+import com.sequenceiq.cloudbreak.auth.ThreadBasedUserCrnProvider;
 import com.sequenceiq.cloudbreak.auth.altus.EntitlementService;
 import com.sequenceiq.cloudbreak.auth.security.authentication.AuthenticatedUserService;
 import com.sequenceiq.cloudbreak.common.mappable.CloudPlatform;
@@ -58,6 +58,7 @@ import com.sequenceiq.cloudbreak.dto.credential.Credential;
 import com.sequenceiq.cloudbreak.exception.BadRequestException;
 import com.sequenceiq.cloudbreak.kerberos.KerberosConfigService;
 import com.sequenceiq.cloudbreak.structuredevent.CloudbreakRestRequestThreadLocalService;
+import com.sequenceiq.cloudbreak.service.LoadBalancerConfigService;
 import com.sequenceiq.cloudbreak.service.account.PreferencesService;
 import com.sequenceiq.cloudbreak.service.datalake.DatalakeResourcesService;
 import com.sequenceiq.cloudbreak.service.environment.EnvironmentClientService;
@@ -71,12 +72,15 @@ import com.sequenceiq.cloudbreak.workspace.model.User;
 import com.sequenceiq.cloudbreak.workspace.model.Workspace;
 import com.sequenceiq.common.api.telemetry.model.Telemetry;
 import com.sequenceiq.common.api.type.InstanceGroupType;
+import com.sequenceiq.common.api.type.TargetGroupType;
 import com.sequenceiq.common.api.type.Tunnel;
 import com.sequenceiq.environment.api.v1.credential.model.response.CredentialResponse;
 import com.sequenceiq.environment.api.v1.environment.model.response.DetailedEnvironmentResponse;
 import com.sequenceiq.environment.api.v1.environment.model.response.TagResponse;
 
 public class StackV4RequestToStackConverterTest extends AbstractJsonConverterTest<StackV4Request> {
+
+    private static final String TEST_USER_CRN = "crn:cdp:iam:us-west-1:accid:user:mockuser@cloudera.com";
 
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
@@ -154,6 +158,13 @@ public class StackV4RequestToStackConverterTest extends AbstractJsonConverterTes
     private LoadBalancerConfigService loadBalancerConfigService;
 
     private Credential credential;
+
+    @BeforeClass
+    public static void setupUserCrn() {
+        if (ThreadBasedUserCrnProvider.getUserCrn() == null) {
+            ThreadBasedUserCrnProvider.setUserCrn(TEST_USER_CRN);
+        }
+    }
 
     @Before
     public void setUp() {
@@ -312,6 +323,7 @@ public class StackV4RequestToStackConverterTest extends AbstractJsonConverterTes
         ReflectionTestUtils.setField(underTest, "defaultRegions", "AWS:eu-west-2");
         StackV4Request request = getRequest("stack-datalake-with-instancegroups.json");
 
+        when(entitlementService.datalakeLoadBalancerEnabled(anyString(), anyString())).thenReturn(true);
         given(credentialClientService.getByCrn(anyString())).willReturn(credential);
         given(credentialClientService.getByName(anyString())).willReturn(credential);
         given(providerParameterCalculator.get(request)).willReturn(getMappable());
@@ -321,23 +333,27 @@ public class StackV4RequestToStackConverterTest extends AbstractJsonConverterTes
         // WHEN
         Stack stack = underTest.convert(request);
         // THEN
-        assertAllFieldsNotNull(
-            stack,
-            Arrays.asList("description", "cluster", "environmentCrn", "gatewayPort", "useCcm", "network", "securityConfig",
-                "version", "created", "platformVariant", "cloudPlatform",
-                "customHostname", "customDomain", "clusterNameAsSubdomain", "hostgroupNameAsHostname", "parameters", "creator",
-                "environmentCrn", "terminated", "datalakeResourceId", "type", "inputs", "failurePolicy", "resourceCrn", "minaSshdServiceId",
-                "externalDatabaseCreationType"));
-        assertEquals("eu-west-1", stack.getRegion());
-        assertEquals("AWS", stack.getCloudPlatform());
-        assertEquals("mystack", stack.getName());
         assertEquals(1, stack.getLoadBalancers().size());
         assertEquals(1, stack.getLoadBalancers().iterator().next().getTargetGroups().size());
         assertEquals(TargetGroupType.KNOX.name(), stack.getLoadBalancers().iterator().next().getTargetGroups().iterator().next().getType());
-        verify(telemetryConverter, times(1)).convert(null, StackType.DATALAKE);
-        verify(environmentClientService, times(1)).getByCrn(anyString());
-        verify(gatewaySecurityGroupDecorator, times(1))
-            .extendGatewaySecurityGroupWithDefaultGatewayCidrs(any(Stack.class), any(Tunnel.class));
+    }
+
+    @Test
+    public void testNoLoadBalancersCreatedWhenEntitlementIsDisabled() {
+        initMocks();
+        ReflectionTestUtils.setField(underTest, "defaultRegions", "AWS:eu-west-2");
+        StackV4Request request = getRequest("stack-datalake-with-instancegroups.json");
+
+        given(credentialClientService.getByCrn(anyString())).willReturn(credential);
+        given(credentialClientService.getByName(anyString())).willReturn(credential);
+        given(providerParameterCalculator.get(request)).willReturn(getMappable());
+        given(conversionService.convert(any(ClusterV4Request.class), eq(Cluster.class))).willReturn(new Cluster());
+        given(telemetryConverter.convert(null, StackType.DATALAKE)).willReturn(new Telemetry());
+        given(loadBalancerConfigService.getKnoxGatewayGroups(any(Stack.class))).willReturn(Set.of("master"));
+        // WHEN
+        Stack stack = underTest.convert(request);
+        // THEN
+        assertEquals(0, stack.getLoadBalancers().size());
     }
 
     @Override

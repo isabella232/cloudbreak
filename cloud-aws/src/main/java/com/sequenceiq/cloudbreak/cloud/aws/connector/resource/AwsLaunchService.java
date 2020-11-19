@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -224,18 +225,22 @@ public class AwsLaunchService {
             for (AwsLoadBalancer loadBalancer : awsLoadBalancers) {
                 for (AwsListener listener : loadBalancer.getListeners()) {
                     for (AwsTargetGroup targetGroup : listener.getTargetGroups()) {
-                        StackResourceSummary targetGroupSummary = result.getStackResourceSummaries().stream()
+                        Optional<StackResourceSummary> targetGroupSummary = result.getStackResourceSummaries().stream()
                             .filter(stackResourceSummary -> targetGroup.getName().equals(stackResourceSummary.getLogicalResourceId()))
-                            .collect(Collectors.toList())
-                            .get(0);
-                        targetGroup.setArn(targetGroupSummary.getPhysicalResourceId());
+                            .findFirst();
+                        if (targetGroupSummary.isEmpty()) {
+                            throw new CloudConnectorException("Could not create load balancer listeners: target group not found.");
+                        }
+                        targetGroup.setArn(targetGroupSummary.get().getPhysicalResourceId());
                     }
                 }
-                StackResourceSummary loadBalancerSummary = result.getStackResourceSummaries().stream()
+                Optional<StackResourceSummary> loadBalancerSummary = result.getStackResourceSummaries().stream()
                     .filter(stackResourceSummary -> loadBalancer.getName().equals(stackResourceSummary.getLogicalResourceId()))
-                    .collect(Collectors.toList())
-                    .get(0);
-                loadBalancer.setArn(loadBalancerSummary.getPhysicalResourceId());
+                    .findFirst();
+                if (loadBalancerSummary.isEmpty()) {
+                    throw new CloudConnectorException("Could not create load balancer listeners: load balancer not found.");
+                }
+                loadBalancer.setArn(loadBalancerSummary.get().getPhysicalResourceId());
                 loadBalancer.canCreateListeners();
             }
 

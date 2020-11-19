@@ -66,6 +66,7 @@ import com.sequenceiq.cloudbreak.service.image.ImageService;
 import com.sequenceiq.cloudbreak.service.LoadBalancerConfigService;
 import com.sequenceiq.cloudbreak.service.securityrule.SecurityRuleService;
 import com.sequenceiq.cloudbreak.service.stack.DefaultRootVolumeSizeProvider;
+import com.sequenceiq.cloudbreak.service.stack.InstanceGroupService;
 import com.sequenceiq.cloudbreak.service.stack.LoadBalancerService;
 import com.sequenceiq.cloudbreak.service.stack.TargetGroupService;
 import com.sequenceiq.cloudbreak.template.VolumeUtils;
@@ -112,6 +113,9 @@ public class StackToCloudStackConverter {
 
     @Inject
     private TargetGroupService targetGroupService;
+
+    @Inject
+    private InstanceGroupService instanceGroupService;
 
     @Inject
     private LoadBalancerConfigService loadBalancerConfigService;
@@ -262,7 +266,7 @@ public class StackToCloudStackConverter {
             CloudLoadBalancer cloudLoadBalancer = new CloudLoadBalancer(LoadBalancerType.valueOf(loadBalancer.getType()));
             for (TargetGroup targetGroup : targetGroupService.findByLoadBalancerId(loadBalancer.getId())) {
                 Set<Integer> ports = loadBalancerConfigService.getPortsForTargetGroup(targetGroup);
-                Set<String> targetInstanceGroupName = targetGroup.getInstanceGroups().stream()
+                Set<String> targetInstanceGroupName = instanceGroupService.findByTargetGroupId(targetGroup.getId()).stream()
                     .map(InstanceGroup::getGroupName)
                     .collect(Collectors.toSet());
                 for (Integer port : ports) {
@@ -270,7 +274,6 @@ public class StackToCloudStackConverter {
                         .filter(ig -> targetInstanceGroupName.contains(ig.getName()))
                         .collect(Collectors.toSet()));
                 }
-                // TODO handle CM target groups
             }
             cloudLoadBalancers.add(cloudLoadBalancer);
         }

@@ -1,6 +1,8 @@
 {%- from 'metadata/settings.sls' import metadata with context %}
 
 {% set configure_remote_db = salt['pillar.get']('postgres:configure_remote_db', 'None') %}
+{% set postgres_data_directory = salt['pillar.get']('postgres:postgres_data_directory') %}
+{% set postgres_data_on_attached_disk = salt['pillar.get']('postgres:postgres_data_on_attached_disk', 'None') %}
 
 {% if 'None' != configure_remote_db %}
 
@@ -24,14 +26,29 @@ init-services-db-remote:
 
 init-db-with-utf8:
   cmd.run:
-    - name: rm -rf /var/lib/pgsql/data && runuser -l postgres sh -c 'initdb --locale=en_US.UTF-8 /var/lib/pgsql/data > /var/lib/pgsql/initdb.log' && rm /var/log/pgsql_listen_address_configured
+    - name: rm -rf {{ postgres_data_directory }} && runuser -l postgres sh -c 'initdb --locale=en_US.UTF-8 {{ postgres_data_directory }} > /var/lib/pgsql/initdb.log' && rm /var/log/pgsql_listen_address_configured
     - unless: grep -q UTF-8 /var/lib/pgsql/initdb.log
+
+{%- if postgres_data_on_attached_disk %}
+
+change-db-location:
+  file.replace:
+    - name: /usr/lib/systemd/system/postgresql-10.service
+    - pattern: "Environment=PGDATA=.*"
+    - repl: Environment=PGDATA=/hadoopfs/fs1/pgsql/data
+    - unless: grep "Environment=PGDATA={{ postgres_data_directory }}" /usr/lib/systemd/system/postgresql-10.service
+
+{%- endif %}
 
 start-postgresql:
   service.running:
     - enable: True
     - require:
       - cmd: init-db-with-utf8
+{%- if postgres_data_on_attached_disk %}
+    - watch:
+      - file: /usr/lib/systemd/system/postgresql-10.service
+{%- endif %}
     - name: postgresql
 
 /opt/salt/scripts/conf_pgsql_listen_address.sh:

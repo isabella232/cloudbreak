@@ -163,10 +163,10 @@ public class StackServiceTest {
     private FlowLogService flowLogService;
 
     @Mock
-    private LoadBalancerService loadBalancerService;
+    private LoadBalancerPersistenceService loadBalancerPersistenceService;
 
     @Mock
-    private TargetGroupService targetGroupService;
+    private TargetGroupPersistenceService targetGroupPersistenceService;
 
     @Test
     public void testWhenStackCouldNotFindByItsIdThenExceptionWouldThrown() {

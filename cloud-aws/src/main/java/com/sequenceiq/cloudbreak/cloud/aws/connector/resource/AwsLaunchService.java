@@ -208,13 +208,13 @@ public class AwsLaunchService {
     private void updateCloudformationWithLoadBalancer(AuthenticatedContext ac, CloudStack stack, PersistenceNotifier resourceNotifier,
             ModelContext modelContext, List<CloudResource> instances) {
 
-        if (stack.getLoadBalancers().isPresent() && !stack.getLoadBalancers().get().isEmpty()) {
+        List<CloudLoadBalancer> cloudLoadBalancers = stack.getLoadBalancers();
+        if (!cloudLoadBalancers.isEmpty()) {
             if (modelContext == null) {
                 modelContext = buildDefaultModelContext(ac, stack, resourceNotifier);
             }
 
             List<AwsLoadBalancer> awsLoadBalancers = new ArrayList<>();
-            List<CloudLoadBalancer> cloudLoadBalancers = stack.getLoadBalancers().get();
             for (CloudLoadBalancer cloudLoadBalancer : cloudLoadBalancers) {
                 awsLoadBalancers.add(convert(cloudLoadBalancer, stack, instances));
             }

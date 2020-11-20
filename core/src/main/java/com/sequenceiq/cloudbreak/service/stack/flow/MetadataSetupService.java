@@ -6,7 +6,7 @@ import static com.sequenceiq.cloudbreak.cloud.model.InstanceStatus.TERMINATED;
 import com.sequenceiq.cloudbreak.cloud.model.CloudLoadBalancerMetadata;
 import com.sequenceiq.cloudbreak.domain.stack.loadbalancer.LoadBalancer;
 import com.sequenceiq.cloudbreak.service.LoadBalancerConfigService;
-import com.sequenceiq.cloudbreak.service.stack.LoadBalancerService;
+import com.sequenceiq.cloudbreak.service.stack.LoadBalancerPersistenceService;
 import com.sequenceiq.common.api.type.LoadBalancerType;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +54,7 @@ public class MetadataSetupService {
     private InstanceMetaDataService instanceMetaDataService;
 
     @Inject
-    private LoadBalancerService loadBalancerMetadataService;
+    private LoadBalancerPersistenceService loadBalancerMetadataService;
 
     @Inject
     private LoadBalancerConfigService loadBalancerConfigService;

@@ -10,7 +10,7 @@ import com.sequenceiq.cloudbreak.domain.stack.loadbalancer.LoadBalancer;
 import com.sequenceiq.cloudbreak.repository.LoadBalancerRepository;
 
 @Service
-public class LoadBalancerService {
+public class LoadBalancerPersistenceService {
 
     @Inject
     private LoadBalancerRepository repository;

@@ -37,10 +37,10 @@ public class LoadBalancerConfigService {
         Cluster cluster = stack.getCluster();
         if (cluster != null) {
             CmTemplateProcessor cmTemplateProcessor = new CmTemplateProcessor(cluster.getBlueprint().getBlueprintText());
-            Map<String, Set<ServiceComponent>> components = cmTemplateProcessor.getServiceComponentsByHostGroup();
+            Map<String, Set<ServiceComponent>> componentByHostGroup = cmTemplateProcessor.getServiceComponentsByHostGroup();
             LOGGER.info("Checking if Knox gateway is explicitly defined");
-            groupNames = components.entrySet().stream()
-                .filter(e -> e.getValue().stream().anyMatch(c -> KnoxRoles.KNOX_GATEWAY.equals(c.getComponent())))
+            groupNames = componentByHostGroup.entrySet().stream()
+                .filter(entry -> isKnoxGatewayDefinedInServices(entry.getValue()))
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
         }
@@ -57,6 +57,11 @@ public class LoadBalancerConfigService {
             LOGGER.info("No Knox gateway instance groups found");
         }
         return groupNames;
+    }
+
+    private boolean isKnoxGatewayDefinedInServices(Set<ServiceComponent> serviceComponents) {
+        return serviceComponents.stream()
+            .anyMatch(serviceComponent -> KnoxRoles.KNOX_GATEWAY.equals(serviceComponent.getComponent()));
     }
 
     public String generateLoadBalancerEndpoint(Stack stack, LoadBalancerType type) {

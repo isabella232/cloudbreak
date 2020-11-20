@@ -25,7 +25,7 @@ import com.sequenceiq.cloudbreak.domain.stack.loadbalancer.LoadBalancer;
 import com.sequenceiq.cloudbreak.service.cluster.ClusterService;
 import com.sequenceiq.cloudbreak.service.environment.EnvironmentClientService;
 import com.sequenceiq.cloudbreak.service.securityconfig.SecurityConfigService;
-import com.sequenceiq.cloudbreak.service.stack.LoadBalancerService;
+import com.sequenceiq.cloudbreak.service.stack.LoadBalancerPersistenceService;
 import com.sequenceiq.environment.api.v1.environment.model.response.DetailedEnvironmentResponse;
 
 @Service
@@ -43,7 +43,7 @@ public class GatewayPublicEndpointManagementService extends BasePublicEndpointMa
     private ClusterService clusterService;
 
     @Inject
-    private LoadBalancerService loadBalancerService;
+    private LoadBalancerPersistenceService loadBalancerPersistenceService;
 
     public boolean isCertRenewalTriggerable(Stack stack) {
         return manageCertificateAndDnsInPem()
@@ -102,7 +102,7 @@ public class GatewayPublicEndpointManagementService extends BasePublicEndpointMa
     }
 
     public void updateDnsEntryForLoadBalancers(Stack stack) {
-        Set<LoadBalancer> loadBalancers = loadBalancerService.findByStackId(stack.getId());
+        Set<LoadBalancer> loadBalancers = loadBalancerPersistenceService.findByStackId(stack.getId());
         if (loadBalancers.isEmpty()) {
             LOGGER.info("No load balancers in stack {}", stack.getId());
             return;
@@ -159,7 +159,7 @@ public class GatewayPublicEndpointManagementService extends BasePublicEndpointMa
     }
 
     public void deleteLoadBalancerDnsEntry(Stack stack, String environmentName) {
-        Set<LoadBalancer> loadBalancers = loadBalancerService.findByStackId(stack.getId());
+        Set<LoadBalancer> loadBalancers = loadBalancerPersistenceService.findByStackId(stack.getId());
         if (loadBalancers.isEmpty()) {
             LOGGER.info("No load balancers in stack {}", stack.getId());
             return;
@@ -273,7 +273,7 @@ public class GatewayPublicEndpointManagementService extends BasePublicEndpointMa
     }
 
     private Set<String> getLoadBalancerNamesForStack(Stack stack) {
-        return loadBalancerService.findByStackId(stack.getId()).stream()
+        return loadBalancerPersistenceService.findByStackId(stack.getId()).stream()
             .map(LoadBalancer::getEndpoint).collect(Collectors.toSet());
     }
 }

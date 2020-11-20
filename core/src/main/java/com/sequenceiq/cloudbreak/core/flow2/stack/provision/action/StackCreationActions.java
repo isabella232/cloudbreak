@@ -61,7 +61,7 @@ import com.sequenceiq.cloudbreak.reactor.api.event.stack.userdata.CreateUserData
 import com.sequenceiq.cloudbreak.reactor.api.event.stack.userdata.CreateUserDataSuccess;
 import com.sequenceiq.cloudbreak.service.image.ImageService;
 import com.sequenceiq.cloudbreak.service.metrics.MetricType;
-import com.sequenceiq.cloudbreak.service.stack.LoadBalancerService;
+import com.sequenceiq.cloudbreak.service.stack.LoadBalancerPersistenceService;
 import com.sequenceiq.cloudbreak.service.stack.StackService;
 import com.sequenceiq.flow.core.Flow;
 import com.sequenceiq.flow.core.FlowParameters;
@@ -88,7 +88,7 @@ public class StackCreationActions {
     private StackService stackService;
 
     @Inject
-    private LoadBalancerService loadBalancerService;
+    private LoadBalancerPersistenceService loadBalancerPersistenceService;
 
     @Bean(name = "VALIDATION_STATE")
     public Action<?, ?> provisioningValidationAction() {
@@ -225,7 +225,7 @@ public class StackCreationActions {
 
             @Override
             protected Selectable createRequest(StackContext context) {
-                List<String> loadBalancerTypes = loadBalancerService.findByStackId(context.getStack().getId()).stream()
+                List<String> loadBalancerTypes = loadBalancerPersistenceService.findByStackId(context.getStack().getId()).stream()
                     .map(LoadBalancer::getType)
                     .collect(Collectors.toList());
                 return new CollectLoadBalancerMetadataRequest(context.getCloudContext(), context.getCloudCredential(),

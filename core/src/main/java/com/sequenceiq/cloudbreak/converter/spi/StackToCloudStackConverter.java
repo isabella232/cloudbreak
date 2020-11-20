@@ -67,8 +67,8 @@ import com.sequenceiq.cloudbreak.service.LoadBalancerConfigService;
 import com.sequenceiq.cloudbreak.service.securityrule.SecurityRuleService;
 import com.sequenceiq.cloudbreak.service.stack.DefaultRootVolumeSizeProvider;
 import com.sequenceiq.cloudbreak.service.stack.InstanceGroupService;
-import com.sequenceiq.cloudbreak.service.stack.LoadBalancerService;
-import com.sequenceiq.cloudbreak.service.stack.TargetGroupService;
+import com.sequenceiq.cloudbreak.service.stack.LoadBalancerPersistenceService;
+import com.sequenceiq.cloudbreak.service.stack.TargetGroupPersistenceService;
 import com.sequenceiq.cloudbreak.template.VolumeUtils;
 import com.sequenceiq.common.api.type.LoadBalancerType;
 import com.sequenceiq.environment.api.v1.environment.model.request.azure.AzureEnvironmentParameters;
@@ -109,10 +109,10 @@ public class StackToCloudStackConverter {
     private EnvironmentClientService environmentClientService;
 
     @Inject
-    private LoadBalancerService loadBalancerService;
+    private LoadBalancerPersistenceService loadBalancerPersistenceService;
 
     @Inject
-    private TargetGroupService targetGroupService;
+    private TargetGroupPersistenceService targetGroupPersistenceService;
 
     @Inject
     private InstanceGroupService instanceGroupService;
@@ -262,9 +262,9 @@ public class StackToCloudStackConverter {
 
     private List<CloudLoadBalancer> buildLoadBalancers(Stack stack, List<Group> instanceGroups) {
         List<CloudLoadBalancer> cloudLoadBalancers = new ArrayList<>();
-        for (LoadBalancer loadBalancer : loadBalancerService.findByStackId(stack.getId())) {
+        for (LoadBalancer loadBalancer : loadBalancerPersistenceService.findByStackId(stack.getId())) {
             CloudLoadBalancer cloudLoadBalancer = new CloudLoadBalancer(LoadBalancerType.valueOf(loadBalancer.getType()));
-            for (TargetGroup targetGroup : targetGroupService.findByLoadBalancerId(loadBalancer.getId())) {
+            for (TargetGroup targetGroup : targetGroupPersistenceService.findByLoadBalancerId(loadBalancer.getId())) {
                 Set<Integer> ports = loadBalancerConfigService.getPortsForTargetGroup(targetGroup);
                 Set<String> targetInstanceGroupName = instanceGroupService.findByTargetGroupId(targetGroup.getId()).stream()
                     .map(InstanceGroup::getGroupName)

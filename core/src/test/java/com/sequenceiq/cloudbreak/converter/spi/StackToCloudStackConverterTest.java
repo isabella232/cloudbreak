@@ -75,8 +75,8 @@ import com.sequenceiq.cloudbreak.service.LoadBalancerConfigService;
 import com.sequenceiq.cloudbreak.service.securityrule.SecurityRuleService;
 import com.sequenceiq.cloudbreak.service.stack.DefaultRootVolumeSizeProvider;
 import com.sequenceiq.cloudbreak.service.stack.InstanceGroupService;
-import com.sequenceiq.cloudbreak.service.stack.LoadBalancerService;
-import com.sequenceiq.cloudbreak.service.stack.TargetGroupService;
+import com.sequenceiq.cloudbreak.service.stack.LoadBalancerPersistenceService;
+import com.sequenceiq.cloudbreak.service.stack.TargetGroupPersistenceService;
 import com.sequenceiq.cloudbreak.template.filesystem.FileSystemConfigurationsViewProvider;
 import com.sequenceiq.common.api.type.EncryptionType;
 import com.sequenceiq.common.api.type.LoadBalancerType;
@@ -170,10 +170,10 @@ public class StackToCloudStackConverterTest {
     private EnvironmentClientService environmentClientService;
 
     @Mock
-    private LoadBalancerService loadBalancerService;
+    private LoadBalancerPersistenceService loadBalancerPersistenceService;
 
     @Mock
-    private TargetGroupService targetGroupService;
+    private TargetGroupPersistenceService targetGroupPersistenceService;
 
     @Mock
     private InstanceGroupService instanceGroupService;
@@ -197,8 +197,8 @@ public class StackToCloudStackConverterTest {
         when(cloudFileSystemViewProvider.getCloudFileSystemView(any(), any(), any())).thenReturn(Optional.empty());
         DetailedEnvironmentResponse environmentResponse = new DetailedEnvironmentResponse();
         when(environmentClientService.getByCrn(anyString())).thenReturn(environmentResponse);
-        when(loadBalancerService.findByStackId(anyLong())).thenReturn(Collections.emptySet());
-        when(targetGroupService.findByLoadBalancerId(anyLong())).thenReturn(Collections.emptySet());
+        when(loadBalancerPersistenceService.findByStackId(anyLong())).thenReturn(Collections.emptySet());
+        when(targetGroupPersistenceService.findByLoadBalancerId(anyLong())).thenReturn(Collections.emptySet());
     }
 
     @Test
@@ -966,16 +966,15 @@ public class StackToCloudStackConverterTest {
         LoadBalancer loadBalancer = mock(LoadBalancer.class);
         when(loadBalancer.getType()).thenReturn(LoadBalancerType.PRIVATE.name());
         when(loadBalancer.getId()).thenReturn(1L);
-        when(loadBalancerService.findByStackId(anyLong())).thenReturn(Set.of(loadBalancer));
-        when(targetGroupService.findByLoadBalancerId(anyLong())).thenReturn(Set.of(targetGroup));
+        when(loadBalancerPersistenceService.findByStackId(anyLong())).thenReturn(Set.of(loadBalancer));
+        when(targetGroupPersistenceService.findByLoadBalancerId(anyLong())).thenReturn(Set.of(targetGroup));
         when(instanceGroupService.findByTargetGroupId(anyLong())).thenReturn(Set.of(instanceGroup1, instanceGroup2));
         when(loadBalancerConfigService.getPortsForTargetGroup(any(TargetGroup.class))).thenReturn(Set.of(443));
 
         CloudStack result = underTest.convert(stack);
 
-        assertTrue(result.getLoadBalancers().isPresent());
-        assertEquals(1, result.getLoadBalancers().get().size());
-        CloudLoadBalancer cloudLoadBalancer = result.getLoadBalancers().get().iterator().next();
+        assertEquals(1, result.getLoadBalancers().size());
+        CloudLoadBalancer cloudLoadBalancer = result.getLoadBalancers().iterator().next();
         assertEquals(LoadBalancerType.PRIVATE, cloudLoadBalancer.getType());
         assertEquals(Set.of(443), cloudLoadBalancer.getPortToTargetGroupMapping().keySet());
         Set<String> groupNames = cloudLoadBalancer.getPortToTargetGroupMapping().values().stream()

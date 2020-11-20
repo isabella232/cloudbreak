@@ -10,7 +10,7 @@ import com.sequenceiq.cloudbreak.domain.stack.loadbalancer.TargetGroup;
 import com.sequenceiq.cloudbreak.repository.TargetGroupRepository;
 
 @Service
-public class TargetGroupService {
+public class TargetGroupPersistenceService {
 
     @Inject
     private TargetGroupRepository repository;

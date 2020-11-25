@@ -99,6 +99,7 @@ public class ResourceCreateThread implements Callable<ResourceRequestResult<List
 
                         List<CloudResource> resources = builder.build(context, privateId, auth, group, cloudResources, cloudStack);
                         updateResource(auth, resources);
+
                         context.addComputeResources(privateId, resources);
 
                         if (ResourceType.GCP_INSTANCE.equals(builder.resourceType())) {

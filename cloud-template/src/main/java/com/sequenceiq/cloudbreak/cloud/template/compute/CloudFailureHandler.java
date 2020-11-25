@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
@@ -41,16 +42,16 @@ public class CloudFailureHandler {
     @Inject
     private ApplicationContext applicationContext;
 
-    public void rollback(AuthenticatedContext auth, List<CloudResourceStatus> failuresList, Group group, Integer fullNodeCount,
+    public void rollback(AuthenticatedContext auth, List<CloudResourceStatus> failuresList, List<CloudResourceStatus> resourceStatuses, Group group, Integer fullNodeCount,
             ResourceBuilderContext ctx, ResourceBuilders resourceBuilders, ScaleContext stx) {
         if (failuresList.isEmpty()) {
             return;
         }
         LOGGER.debug("Roll back the following resources: {}", failuresList);
-        doRollback(auth, failuresList, group, fullNodeCount, ctx, resourceBuilders, stx);
+        doRollback(auth, failuresList, resourceStatuses, group, fullNodeCount, ctx, resourceBuilders, stx);
     }
 
-    private void doRollback(AuthenticatedContext auth, List<CloudResourceStatus> failuresList, Group group, Integer fullNodeCount,
+    private void doRollback(AuthenticatedContext auth, List<CloudResourceStatus> failuresList, List<CloudResourceStatus> resourceStatuses, Group group, Integer fullNodeCount,
             ResourceBuilderContext ctx, ResourceBuilders resourceBuilders, ScaleContext stx) {
         Set<Long> failures = failureCount(failuresList);
         if (stx.getAdjustmentType() == null && !failures.isEmpty()) {
@@ -61,6 +62,8 @@ public class CloudFailureHandler {
             case EXACT:
                 if (stx.getThreshold() > fullNodeCount - failures.size()) {
                     LOGGER.info("Number of failures is more than the threshold so error will throw");
+                    failures = resourceStatuses.stream().map(CloudResourceStatus::getPrivateId).collect(Collectors.toSet());
+                    doRollbackAndDecreaseNodeCount(auth, resourceStatuses, failures, group, ctx, resourceBuilders, stx.getUpscale());
                     throwError(failuresList);
                 } else if (!failures.isEmpty()) {
                     LOGGER.info("Decrease node counts because threshold was higher");

@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.concurrent.Future;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
@@ -163,18 +164,18 @@ public class AwsVolumeResourceBuilder extends AbstractAwsComputeBuilder {
     @Override
     public List<CloudResource> build(AwsContext context, long privateId, AuthenticatedContext auth, Group group,
             List<CloudResource> buildableResource, CloudStack cloudStack) throws Exception {
-        LOGGER.debug("Create volumes on provider");
+        LOGGER.debug("Create volumes on provider" + buildableResource.stream().map(CloudResource::getName).collect(Collectors.toList()));
         AmazonEc2RetryClient client = getAmazonEC2Client(auth);
 
         Map<String, List<Volume>> volumeSetMap = Collections.synchronizedMap(new HashMap<>());
 
-        List<Future<?>> futures = new ArrayList<>();
+        Map<CloudResource, Future<?>> futures = new HashMap<>();
         String snapshotId = getEbsSnapshotIdIfNeeded(auth, cloudStack, group);
         boolean encryptedVolumeUsingFastApproach = isEncryptedVolumeUsingFastApproachRequested(group);
         String volumeEncryptionKey = getVolumeEncryptionKey(group, encryptedVolumeUsingFastApproach);
         TagSpecification tagSpecification = new TagSpecification()
                 .withResourceType(com.amazonaws.services.ec2.model.ResourceType.Volume)
-                .withTags(awsTaggingService.prepareEc2Tags(auth, cloudStack.getTags()));
+                .withTags(awsTaggingService.prepareEc2Tags(cloudStack.getTags()));
 
         List<CloudResource> requestedResources = buildableResource.stream()
                 .filter(cloudResource -> CommonStatus.REQUESTED.equals(cloudResource.getStatus()))
@@ -189,20 +190,40 @@ public class AwsVolumeResourceBuilder extends AbstractAwsComputeBuilder {
 
             VolumeSetAttributes volumeSet = resource.getParameter(CloudResource.ATTRIBUTES, VolumeSetAttributes.class);
             DeviceNameGenerator generator = new DeviceNameGenerator(DEVICE_NAME_TEMPLATE, ephemeralCount.intValue());
-            futures.addAll(volumeSet.getVolumes().stream()
+            futures = volumeSet.getVolumes().stream()
                     .map(createVolumeRequest(snapshotId, encryptedVolumeUsingFastApproach, volumeEncryptionKey, tagSpecification, volumeSet))
                     .map(request -> intermediateBuilderExecutor.submit(() -> {
+                        if (new Random().nextBoolean()) {
+                            request.setAvailabilityZone("illegal");
+                        }
                         CreateVolumeResult result = client.createVolume(request);
                         String volumeId = result.getVolume().getVolumeId();
                         Volume volume = new Volume(volumeId, generator.next(), request.getSize(), request.getVolumeType());
                         volumeSetMap.get(resource.getName()).add(volume);
                     }))
-                    .collect(Collectors.toList()));
+                    .collect(Collectors.toMap(future -> resource, future -> future));
+        }
+//
+        Map<CloudResource, Exception> failedCloudResource = new HashMap<>();
+
+        for (Map.Entry<CloudResource, Future<?>> futureEntry : futures.entrySet()) {
+            CloudResource volumeResource = futureEntry.getKey();
+            Future<?> future = futureEntry.getValue();
+//            try {
+                future.get();
+//            } catch (Exception e) {
+//                failedCloudResource.put(volumeResource, e);
+//            }
         }
 
-        for (Future<?> future : futures) {
-            future.get();
-        }
+//        if (!failedCloudResource.keySet().isEmpty()) {
+//            DescribeVolumesRequest describeVolumesRequest = new DescribeVolumesRequest();
+//            describeVolumesRequest.setFilters(Collections.singletonList(new Filter().withName("tag:cloudbreak-name")
+//                    .withValues(requestedResources.stream().map(CloudResource::getName).collect(Collectors.toList()))));
+//            client.describeVolumes(describeVolumesRequest).getVolumes()
+//                    .forEach(volume -> client.deleteVolume(new DeleteVolumeRequest(volume.getVolumeId())));
+//            throw new Exception("pina");
+//        }
 
         return buildableResource.stream()
                 .peek(resource -> {
@@ -211,16 +232,16 @@ public class AwsVolumeResourceBuilder extends AbstractAwsComputeBuilder {
                         resource.getParameter(CloudResource.ATTRIBUTES, VolumeSetAttributes.class).setVolumes(volumes);
                     }
                 })
-                .map(copyResourceWithNewStatus(CommonStatus.CREATED))
+                .map(copyResourceWithNewStatus(failedCloudResource))
                 .collect(Collectors.toList());
     }
 
-    private Function<CloudResource, CloudResource> copyResourceWithNewStatus(CommonStatus status) {
+    private Function<CloudResource, CloudResource> copyResourceWithNewStatus(Map<CloudResource, Exception> failedCloudResource) {
         return resource -> new Builder()
                 .persistent(true)
                 .group(resource.getGroup())
                 .type(resource.getType())
-                .status(status)
+                .status(failedCloudResource.containsKey(resource) ? CommonStatus.FAILED : CommonStatus.CREATED)
                 .name(resource.getName())
                 .params(resource.getParameters())
                 .build();

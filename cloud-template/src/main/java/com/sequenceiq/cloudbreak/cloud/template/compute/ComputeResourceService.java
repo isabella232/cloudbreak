@@ -282,7 +282,7 @@ public class ComputeResourceService {
                     List<List<CloudResourceStatus>> cloudResourceStatusChunks = waitForRequests(futures).get(FutureResult.SUCCESS);
                     List<CloudResourceStatus> resourceStatuses = waitForResourceCreations(cloudResourceStatusChunks);
                     List<CloudResourceStatus> failedResources = filterResourceStatuses(resourceStatuses, ResourceStatus.FAILED);
-                    cloudFailureHandler.rollback(auth, failedResources, group, getFullNodeCount(groups), ctx,
+                    cloudFailureHandler.rollback(auth, failedResources, resourceStatuses, group, getFullNodeCount(groups), ctx,
                             resourceBuilders, new ScaleContext(upscale, adjustmentType, threshold));
                     results.addAll(filterResourceStatuses(resourceStatuses, ResourceStatus.CREATED));
                 }

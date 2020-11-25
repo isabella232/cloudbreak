@@ -61,7 +61,7 @@ public class ResourceDeleteThread implements Callable<ResourceRequestResult<List
     @Override
     public ResourceRequestResult<List<CloudResourceStatus>> call() throws Exception {
         LOGGER.debug("Deleting compute resource {}", resource);
-        if (resource.getStatus().resourceExists()) {
+//        if (resource.getStatus().resourceExists()) {
             CloudResource deletedResource;
             try {
                 deletedResource = builder.delete(context, auth, resource);
@@ -77,7 +77,7 @@ public class ResourceDeleteThread implements Callable<ResourceRequestResult<List
                 deleteResource();
                 return new ResourceRequestResult<>(FutureResult.SUCCESS, pollerResult);
             }
-        }
+//        }
         deleteResource();
         CloudResourceStatus status = new CloudResourceStatus(resource, ResourceStatus.DELETED);
         return new ResourceRequestResult<>(FutureResult.SUCCESS, Collections.singletonList(status));

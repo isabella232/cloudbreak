@@ -11,6 +11,7 @@ base:
     - metering
     - ntp
     - postgresql.root-certs
+    - ccm
 
   'G@roles:ad_member and G@os_family:RedHat':
     - match: compound
